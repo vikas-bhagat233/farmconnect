@@ -8,7 +8,8 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
-import { processPayment, getPaymentDetails } from '../../services/paymentService';
+import RazorpayCheckout from 'react-native-razorpay';
+import { createRazorpayOrder, verifyRazorpayPayment, getPaymentDetails } from '../../services/paymentService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function PaymentScreen({ navigation, route }) {
@@ -29,25 +30,68 @@ export default function PaymentScreen({ navigation, route }) {
   };
 
   const handlePayment = async () => {
+    if (!payment) return;
+    if (!process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID) {
+      Alert.alert('Payment Failed', 'Razorpay key is not configured.');
+      return;
+    }
+
     setProcessing(true);
-    const result = await processPayment({
-      contractId,
-      amount: payment.amount,
-      type: payment.type,
-      buyerId: user.uid,
-      farmerId: payment.farmerId
-    });
-    
-    setProcessing(false);
-    
-    if (result.success) {
+
+    try {
+      const amountPaise = Math.round(Number(payment.amount) * 100);
+      if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
+        throw new Error('Invalid payment amount.');
+      }
+
+      const order = await createRazorpayOrder({
+        amount: amountPaise,
+        currency: 'INR',
+        receipt: `contract_${contractId}_${type}`
+      });
+
+      const checkoutResult = await RazorpayCheckout.open({
+        key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'FarmConnect',
+        description: `${payment.cropName || 'Crop'} - ${getPaymentTypeText()}`,
+        prefill: {
+          email: user?.email || '',
+          contact: user?.phoneNumber || '',
+          name: user?.displayName || ''
+        },
+        theme: { color: '#4CAF50' }
+      });
+
+      const verifyResult = await verifyRazorpayPayment({
+        razorpay_order_id: checkoutResult.razorpay_order_id,
+        razorpay_payment_id: checkoutResult.razorpay_payment_id,
+        razorpay_signature: checkoutResult.razorpay_signature,
+        paymentId: payment.id,
+        contractId,
+        type: payment.type,
+        amount: payment.amount,
+        buyerId: user.uid,
+        farmerId: payment.farmerId,
+        cropName: payment.cropName
+      });
+
+      if (!verifyResult.success) {
+        throw new Error(verifyResult.error || 'Payment verification failed.');
+      }
+
       Alert.alert(
         'Payment Successful',
         `₹${payment.amount} paid successfully`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
-    } else {
-      Alert.alert('Payment Failed', result.error);
+    } catch (error) {
+      const message = error?.error?.description || error?.description || error?.message || 'Payment failed.';
+      Alert.alert('Payment Failed', message);
+    } finally {
+      setProcessing(false);
     }
   };
 

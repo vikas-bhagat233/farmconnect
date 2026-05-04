@@ -47,7 +47,8 @@ service cloud.firestore {
          resource.data.buyerId == request.auth.uid || 
          isAdmin());
       
-      allow create: if isAuthenticated() && isBuyer();
+      allow create: if isAuthenticated() && isBuyer() &&
+        request.resource.data.buyerId == request.auth.uid;
       
       allow update: if isAuthenticated() && 
         ((resource.data.farmerId == request.auth.uid || 
@@ -89,7 +90,14 @@ service cloud.firestore {
          resource.data.farmerId == request.auth.uid || 
          isAdmin());
       
-      allow create: if isAuthenticated() && isBuyer();
+      allow create: if isAuthenticated() && isBuyer() &&
+        request.resource.data.buyerId == request.auth.uid &&
+        request.resource.data.farmerId is string &&
+        request.resource.data.contractId is string &&
+        request.resource.data.type in ['advance', 'remaining'] &&
+        request.resource.data.amount is number &&
+        request.resource.data.amount > 0 &&
+        request.resource.data.status in ['pending', 'processing'];
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }

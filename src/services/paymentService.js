@@ -12,6 +12,35 @@ import {
   Timestamp
 } from './firebase';
 
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+
+const postJson = async (path, payload) => {
+  if (!BACKEND_URL) {
+    throw new Error('Backend URL is not configured.');
+  }
+
+  const response = await fetch(`${BACKEND_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.error || 'Backend request failed.');
+  }
+
+  return data;
+};
+
+export const createRazorpayOrder = async ({ amount, currency = 'INR', receipt }) => {
+  return postJson('/razorpay/create-order', { amount, currency, receipt });
+};
+
+export const verifyRazorpayPayment = async (payload) => {
+  return postJson('/razorpay/verify', payload);
+};
+
 export const processPayment = async (paymentData) => {
   try {
     const paymentRef = doc(collection(db, 'payments'));
