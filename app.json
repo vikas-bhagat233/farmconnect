@@ -28,10 +28,8 @@
     "web": {
       "favicon": "./src/assets/images/logo.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id"
-      }
-    }
+    "plugins": [
+      "expo-localization"
+    ]
   }
 }
