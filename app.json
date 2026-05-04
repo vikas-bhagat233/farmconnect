@@ -29,7 +29,8 @@
       "favicon": "./src/assets/images/logo.png"
     },
     "plugins": [
-      "expo-localization"
+      "expo-localization",
+      "@react-native-google-signin/google-signin"
     ]
   }
 }

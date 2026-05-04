@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { resetPassword } from '../../services/authService';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -21,18 +21,18 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
 
     setLoading(true);
-    try {
-      const auth = getAuth();
-      await sendPasswordResetEmail(auth, email);
+    const result = await resetPassword(email);
+    setLoading(false);
+
+    if (result.success) {
       Alert.alert(
         'Success',
         'Password reset email sent. Check your inbox.',
         [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
       );
-    } catch (error) {
-      Alert.alert('Error', error.message);
+    } else {
+      Alert.alert('Error', result.error || 'Failed to send reset email');
     }
-    setLoading(false);
   };
 
   return (
