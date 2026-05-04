@@ -1,0 +1,112 @@
+{
+  "common": {
+    "app_name": "किसान-खरीदार अनुबंध",
+    "welcome": "स्वागत है",
+    "login": "लॉगिन",
+    "signup": "साइनअप",
+    "logout": "लॉगआउट",
+    "home": "होम",
+    "profile": "प्रोफाइल",
+    "settings": "सेटिंग्स",
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "delete": "हटाएं",
+    "edit": "संपादित करें",
+    "back": "वापस",
+    "next": "अगला",
+    "submit": "जमा करें",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "sort": "क्रमबद्ध करें",
+    "loading": "लोड हो रहा है...",
+    "no_data": "कोई डेटा नहीं मिला",
+    "error": "त्रुटि",
+    "success": "सफलता",
+    "retry": "पुनः प्रयास करें",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "ok": "ठीक है",
+    "close": "बंद करें"
+  },
+  "auth": {
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "confirm_password": "पासवर्ड की पुष्टि करें",
+    "forgot_password": "पासवर्ड भूल गए?",
+    "no_account": "खाता नहीं है?",
+    "have_account": "पहले से खाता है?",
+    "signup_google": "Google से साइनअप करें",
+    "login_google": "Google से लॉगिन करें",
+    "reset_password": "पासवर्ड रीसेट करें",
+    "security_questions": "सुरक्षा प्रश्न",
+    "mother_name": "आपकी माता का पहला नाम क्या है?",
+    "first_pet": "आपके पहले पालतू जानवर का नाम क्या था?",
+    "favorite_teacher": "आपके पसंदीदा शिक्षक का नाम क्या है?",
+    "birth_city": "आपका जन्म किस शहर में हुआ था?",
+    "childhood_nickname": "आपका बचपन का उपनाम क्या है?"
+  },
+  "role": {
+    "select_role": "अपनी भूमिका चुनें",
+    "farmer": "किसान",
+    "buyer": "खरीदार",
+    "farmer_desc": "अपनी फसलें बेचें, लिस्टिंग प्रबंधित करें, अनुबंध प्राप्त करें",
+    "buyer_desc": "फसलें खरीदें, मोलभाव करें, अनुबंध बनाएं"
+  },
+  "farmer": {
+    "dashboard": "किसान डैशबोर्ड",
+    "total_crops": "कुल फसलें",
+    "active_contracts": "सक्रिय अनुबंध",
+    "completed_contracts": "पूर्ण",
+    "total_earnings": "कुल कमाई",
+    "add_crop": "नई फसल जोड़ें",
+    "my_crops": "मेरी फसलें",
+    "recent_crops": "हाल की फसलें"
+  },
+  "buyer": {
+    "dashboard": "खरीदार डैशबोर्ड",
+    "marketplace": "बाज़ार",
+    "featured_crops": "विशेष फसलें",
+    "browse_marketplace": "बाज़ार ब्राउज़ करें",
+    "total_spent": "कुल खर्च"
+  },
+  "crop": {
+    "crops": "फसलें",
+    "add_crop": "फसल जोड़ें",
+    "crop_name": "फसल का नाम",
+    "category": "श्रेणी",
+    "price": "मूल्य (₹/किलो)",
+    "quantity": "मात्रा (किलो)",
+    "description": "विवरण",
+    "location": "स्थान",
+    "available": "उपलब्ध",
+    "unavailable": "अनुपलब्ध",
+    "negotiate": "मोलभाव करें"
+  },
+  "contract": {
+    "contracts": "अनुबंध",
+    "pending": "लंबित",
+    "active": "सक्रिय",
+    "completed": "पूर्ण",
+    "cancelled": "रद्द",
+    "accept": "स्वीकार करें",
+    "reject": "अस्वीकार करें"
+  },
+  "payment": {
+    "payments": "भुगतान",
+    "pay_now": "अभी भुगतान करें",
+    "paid": "भुगतान किया",
+    "unpaid": "अवैतनिक"
+  },
+  "chat": {
+    "chat": "चैट",
+    "type_message": "संदेश लिखें...",
+    "send": "भेजें",
+    "typing": "लिख रहा है..."
+  },
+  "settings": {
+    "theme": "थीम",
+    "language": "भाषा",
+    "dark_mode": "डार्क मोड",
+    "light_mode": "लाइट मोड"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "common": {
+    "app_name": "शेतकरी-खरेदीदार करार",
+    "welcome": "स्वागत आहे",
+    "login": "लॉगिन",
+    "signup": "साइनअप",
+    "logout": "लॉगआउट",
+    "home": "मुख्यपृष्ठ",
+    "profile": "प्रोफाइल",
+    "settings": "सेटिंग्ज",
+    "save": "जतन करा",
+    "cancel": "रद्द करा",
+    "delete": "हटवा",
+    "edit": "संपादित करा",
+    "back": "मागे",
+    "next": "पुढे",
+    "submit": "सबमिट करा",
+    "search": "शोधा",
+    "filter": "फिल्टर",
+    "sort": "क्रमवारी",
+    "loading": "लोड होत आहे...",
+    "no_data": "डेटा सापडला नाही",
+    "error": "त्रुटी",
+    "success": "यश",
+    "retry": "पुन्हा प्रयत्न करा",
+    "yes": "होय",
+    "no": "नाही",
+    "ok": "ठीक आहे",
+    "close": "बंद करा"
+  },
+  "auth": {
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "confirm_password": "पासवर्डची पुष्टी करा",
+    "forgot_password": "पासवर्ड विसरलात?",
+    "no_account": "खाते नाही?",
+    "have_account": "आधीच खाते आहे?",
+    "signup_google": "Google सह साइनअप करा",
+    "login_google": "Google सह लॉगिन करा",
+    "reset_password": "पासवर्ड रीसेट करा",
+    "security_questions": "सुरक्षा प्रश्न",
+    "mother_name": "तुमच्या आईचे पहिले नाव काय आहे?",
+    "first_pet": "तुमच्या पहिल्या पाळीव प्राण्याचे नाव काय होते?",
+    "favorite_teacher": "तुमच्या आवडत्या शिक्षकाचे नाव काय आहे?",
+    "birth_city": "तुमचा जन्म कोणत्या शहरात झाला होता?",
+    "childhood_nickname": "तुमचे बालपणीचे टोपणनाव काय आहे?"
+  },
+  "role": {
+    "select_role": "तुमची भूमिका निवडा",
+    "farmer": "शेतकरी",
+    "buyer": "खरेदीदार",
+    "farmer_desc": "तुमची पिके विका, यादी व्यवस्थापित करा, करार प्राप्त करा",
+    "buyer_desc": "पिके खरेदी करा, भाव करा, करार तयार करा"
+  },
+  "farmer": {
+    "dashboard": "शेतकरी डॅशबोर्ड",
+    "total_crops": "एकूण पिके",
+    "active_contracts": "सक्रिय करार",
+    "completed_contracts": "पूर्ण",
+    "total_earnings": "एकूण कमाई",
+    "add_crop": "नवीन पीक जोडा",
+    "my_crops": "माझी पिके",
+    "recent_crops": "अलीकडील पिके"
+  },
+  "buyer": {
+    "dashboard": "खरेदीदार डॅशबोर्ड",
+    "marketplace": "बाजार",
+    "featured_crops": "वैशिष्ट्यीकृत पिके",
+    "browse_marketplace": "बाजार ब्राउझ करा",
+    "total_spent": "एकूण खर्च"
+  },
+  "crop": {
+    "crops": "पिके",
+    "add_crop": "पीक जोडा",
+    "crop_name": "पिकाचे नाव",
+    "category": "प्रकार",
+    "price": "किंमत (₹/किलो)",
+    "quantity": "प्रमाण (किलो)",
+    "description": "वर्णन",
+    "location": "स्थान",
+    "available": "उपलब्ध",
+    "unavailable": "अनुपलब्ध",
+    "negotiate": "भाव करा"
+  },
+  "contract": {
+    "contracts": "करार",
+    "pending": "प्रलंबित",
+    "active": "सक्रिय",
+    "completed": "पूर्ण",
+    "cancelled": "रद्द",
+    "accept": "स्वीकारा",
+    "reject": "नकारा"
+  },
+  "payment": {
+    "payments": "देयके",
+    "pay_now": "आता पैसे द्या",
+    "paid": "पैसे दिले",
+    "unpaid": "बाकी"
+  },
+  "chat": {
+    "chat": "गप्पा",
+    "type_message": "संदेश लिहा...",
+    "send": "पाठवा",
+    "typing": "लिहित आहे..."
+  },
+  "settings": {
+    "theme": "थीम",
+    "language": "भाषा",
+    "dark_mode": "डार्क मोड",
+    "light_mode": "लाइट मोड"
+  }
+}
