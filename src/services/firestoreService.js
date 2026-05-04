@@ -17,7 +17,7 @@ import {
 // User functions
 export const saveUserRole = async (userId, role) => {
   const userRef = doc(db, 'users', userId);
-  await updateDoc(userRef, { role, updatedAt: new Date().toISOString() });
+  await setDoc(userRef, { role, updatedAt: new Date().toISOString() }, { merge: true });
 };
 
 export const getUserRole = async (userId) => {

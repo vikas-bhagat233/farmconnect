@@ -10,8 +10,15 @@ import {
   db,
   doc,
   setDoc,
-  getDoc
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  GoogleAuthProvider,
+  signInWithCredential
 } from './firebase';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { saveUserRole as saveUserRoleToFirestore, getUserRole } from './firestoreService';
 
 export const loginWithEmail = async (email, password) => {
@@ -24,16 +31,18 @@ export const loginWithEmail = async (email, password) => {
   }
 };
 
-export const signupWithEmail = async (email, password, displayName, securityAnswers) => {
+export const signupWithEmail = async (email, password, displayName, securityAnswers = []) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCredential.user, { displayName });
+    const safeDisplayName = displayName || email.split('@')[0];
+    await updateProfile(userCredential.user, { displayName: safeDisplayName });
     
     // Store security answers
     await setDoc(doc(db, 'users', userCredential.user.uid), {
       email,
-      displayName,
+      displayName: safeDisplayName,
       securityAnswers,
+      role: null,
       createdAt: new Date().toISOString()
     });
     
@@ -45,7 +54,27 @@ export const signupWithEmail = async (email, password, displayName, securityAnsw
 
 export const loginWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    if (!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) {
+      return { success: false, error: 'Google sign-in is not configured.' };
+    }
+
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      offlineAccess: false
+    });
+
+    const { idToken } = await GoogleSignin.signIn();
+    const credential = GoogleAuthProvider.credential(idToken);
+    const result = await signInWithCredential(auth, credential);
+    const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+    if (!userDoc.exists()) {
+      await setDoc(doc(db, 'users', result.user.uid), {
+        email: result.user.email,
+        displayName: result.user.displayName || result.user.email?.split('@')[0],
+        role: null,
+        createdAt: new Date().toISOString()
+      });
+    }
     const role = await getUserRole(result.user.uid);
     return { success: true, user: result.user, role };
   } catch (error) {
@@ -62,27 +91,30 @@ export const resetPassword = async (email) => {
   }
 };
 
-export const resetPasswordWithSecurity = async (email, answers) => {
+export const resetPasswordWithSecurity = async (email, question, answer) => {
   try {
-    const userDoc = await getDoc(doc(db, 'users', email));
-    if (!userDoc.exists()) {
+    const userQuery = query(collection(db, 'users'), where('email', '==', email));
+    const snapshot = await getDocs(userQuery);
+    if (snapshot.empty) {
       return { success: false, error: 'User not found' };
     }
-    
-    const storedAnswers = userDoc.data().securityAnswers;
-    let isValid = true;
-    
-    for (let i = 0; i < answers.length; i++) {
-      if (storedAnswers[i] !== answers[i]) {
-        isValid = false;
-        break;
+
+    const userDoc = snapshot.docs[0];
+    const storedAnswers = userDoc.data().securityAnswers || [];
+    const normalizedAnswer = answer.trim().toLowerCase();
+
+    const matched = storedAnswers.some((entry) => {
+      if (typeof entry === 'string') {
+        return entry.trim().toLowerCase() === normalizedAnswer;
       }
-    }
-    
-    if (!isValid) {
+      return entry?.question === question &&
+        String(entry?.answer || '').trim().toLowerCase() === normalizedAnswer;
+    });
+
+    if (!matched) {
       return { success: false, error: 'Security answers incorrect' };
     }
-    
+
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };

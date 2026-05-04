@@ -12,7 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function SettingsScreen({ navigation }) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, colors } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -52,11 +52,11 @@ export default function SettingsScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Appearance</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
         <View style={styles.settingItem}>
-          <Text style={styles.settingLabel}>Dark Mode</Text>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
           <Switch
             value={theme === 'dark'}
             onValueChange={toggleTheme}
@@ -66,7 +66,7 @@ export default function SettingsScreen({ navigation }) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Language</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('language')}</Text>
         {languages.map((lang) => (
           <TouchableOpacity
             key={lang.code}
@@ -74,7 +74,7 @@ export default function SettingsScreen({ navigation }) {
             onPress={() => handleLanguageChange(lang.code)}
           >
             <Text style={styles.languageFlag}>{lang.flag}</Text>
-            <Text style={[styles.languageName, language === lang.code && styles.selectedLanguageText]}>
+            <Text style={[styles.languageName, { color: colors.text }, language === lang.code && styles.selectedLanguageText]}>
               {lang.name}
             </Text>
             {language === lang.code && <Text style={styles.checkmark}>✓</Text>}

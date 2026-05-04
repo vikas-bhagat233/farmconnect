@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Share
 } from 'react-native';
-import { getBuyerContracts, updateContractStatus, downloadContractPDF } from '../../services/firestoreService';
+import { getBuyerContracts, updateContractStatus, downloadContractPDF } from '../../services/contractService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function BuyerContractsScreen({ navigation }) {

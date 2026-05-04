@@ -10,6 +10,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 
+import { resetPassword, resetPasswordWithSecurity } from '../../services/authService';
+
 const QUESTIONS = [
   'What is your mother\'s maiden name?',
   'What was your first pet\'s name?',
@@ -20,26 +22,37 @@ const QUESTIONS = [
 
 export default function SecurityQuestionsScreen({ navigation, route }) {
   const [selectedQuestion, setSelectedQuestion] = useState(QUESTIONS[0]);
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState('');
+  const [email, setEmail] = useState(route?.params?.email || '');
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
-    if (!answer) {
+    if (!email || !answer) {
       Alert.alert('Error', 'Please answer the security question');
       return;
     }
 
     setLoading(true);
-    // Store security question and answer in Firebase
-    // For demo, just navigate
-    setTimeout(() => {
+    const verify = await resetPasswordWithSecurity(email, selectedQuestion, answer);
+    if (!verify.success) {
       setLoading(false);
-      Alert.alert(
-        'Success',
-        'Answer verified. You can now reset your password.',
-        [{ text: 'OK', onPress: () => navigation.navigate('ResetPassword') }]
-      );
-    }, 1000);
+      Alert.alert('Error', verify.error || 'Security answer incorrect');
+      return;
+    }
+
+    const reset = await resetPassword(email);
+    setLoading(false);
+    if (!reset.success) {
+      Alert.alert('Error', reset.error || 'Failed to send reset email');
+      return;
+    }
+
+    Alert.alert(
+      'Success',
+      'Password reset email sent. Check your inbox.',
+      [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+    );
   };
 
   return (
@@ -52,8 +65,25 @@ export default function SecurityQuestionsScreen({ navigation, route }) {
       </View>
 
       <View style={styles.formContainer}>
+        <Text style={styles.questionLabel}>Email</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
         <Text style={styles.questionLabel}>Security Question</Text>
-        <TouchableOpacity style={styles.questionSelector}>
+        <TouchableOpacity
+          style={styles.questionSelector}
+          onPress={() => {
+            const nextIndex = (questionIndex + 1) % QUESTIONS.length;
+            setQuestionIndex(nextIndex);
+            setSelectedQuestion(QUESTIONS[nextIndex]);
+          }}
+        >
           <Text style={styles.selectedQuestion}>{selectedQuestion}</Text>
         </TouchableOpacity>
 

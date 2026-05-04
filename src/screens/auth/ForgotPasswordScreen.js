@@ -67,7 +67,7 @@ export default function ForgotPasswordScreen({ navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('SecurityQuestions')}
+          onPress={() => navigation.navigate('SecurityQuestions', { email })}
         >
           <Text style={styles.securityText}>
             Reset using security questions?

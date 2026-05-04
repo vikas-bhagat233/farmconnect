@@ -8,7 +8,8 @@ import {
   Image,
   RefreshControl
 } from 'react-native';
-import { getMarketplaceCrops, getBuyerStats } from '../../services/firestoreService';
+import { getMarketplaceCrops } from '../../services/cropService';
+import { getBuyerStats } from '../../services/firestoreService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function BuyerDashboardScreen({ navigation }) {

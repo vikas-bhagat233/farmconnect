@@ -9,7 +9,7 @@ import {
   TextInput,
   RefreshControl
 } from 'react-native';
-import { getMarketplaceCrops } from '../../services/firestoreService';
+import { getMarketplaceCrops } from '../../services/cropService';
 
 export default function MarketplaceScreen({ navigation }) {
   const [crops, setCrops] = useState([]);

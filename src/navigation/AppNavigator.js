@@ -2,6 +2,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import AuthNavigator from './AuthNavigator';
+import RoleSelectionScreen from '../screens/auth/RoleSelectionScreen';
 import FarmerTabNavigator from './FarmerTabNavigator';
 import BuyerTabNavigator from './BuyerTabNavigator';
 import ChatScreen from '../screens/common/ChatScreen';
@@ -30,6 +31,8 @@ export default function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <Stack.Screen name="Auth" component={AuthNavigator} />
+      ) : !userRole ? (
+        <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       ) : userRole === 'farmer' ? (
         <>
           <Stack.Screen name="Main" component={FarmerTabNavigator} />

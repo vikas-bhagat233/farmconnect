@@ -12,14 +12,17 @@ import {
 import { useAuth } from '../../context/AuthContext';
 
 export default function SignupScreen({ navigation }) {
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [selectedQuestion, setSelectedQuestion] = useState('What is your mother\'s maiden name?');
+  const [securityAnswer, setSecurityAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
 
   const handleSignup = async () => {
-    if (!email || !password || !confirmPassword) {
+    if (!displayName || !email || !password || !confirmPassword || !securityAnswer) {
       Alert.alert('Error', 'Please fill all fields');
       return;
     }
@@ -33,7 +36,9 @@ export default function SignupScreen({ navigation }) {
     }
 
     setLoading(true);
-    const result = await signup(email, password);
+    const result = await signup(email, password, displayName, [
+      { question: selectedQuestion, answer: securityAnswer.trim().toLowerCase() }
+    ]);
     setLoading(false);
     
     if (result.success) {
@@ -51,6 +56,14 @@ export default function SignupScreen({ navigation }) {
       </View>
 
       <View style={styles.formContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Full Name"
+          value={displayName}
+          onChangeText={setDisplayName}
+          autoCapitalize="words"
+        />
+
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -74,6 +87,21 @@ export default function SignupScreen({ navigation }) {
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Security Question"
+          value={selectedQuestion}
+          editable={false}
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Security Answer"
+          value={securityAnswer}
+          onChangeText={setSecurityAnswer}
+          autoCapitalize="none"
         />
 
         <TouchableOpacity

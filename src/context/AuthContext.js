@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { auth, onAuthStateChanged } from '../services/firebase';
 import { getUserRole } from '../services/firestoreService';
-import { loginWithEmail, signupWithEmail, loginWithGoogle, logout } from '../services/authService';
+import { loginWithEmail, signupWithEmail, loginWithGoogle, logout, saveUserRole as persistUserRole } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext();
@@ -63,6 +63,7 @@ export const AuthProvider = ({ children }) => {
   const saveUserRole = async (role) => {
     setUserRole(role);
     await AsyncStorage.setItem('userRole', role);
+    await persistUserRole(user.uid, role);
     return { success: true };
   };
 
@@ -88,6 +89,7 @@ export const AuthProvider = ({ children }) => {
       login,
       signup,
       googleLogin,
+      loginWithGoogle: googleLogin,
       logout: handleLogout,
       saveUserRole,
       updateUser
