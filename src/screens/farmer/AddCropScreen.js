@@ -11,7 +11,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { addCrop } from '../../services/firestoreService';
+import { addCrop } from '../../services/cropService';
 import { uploadToCloudinary } from '../../services/cloudinaryService';
 
 const CROP_CATEGORIES = ['Vegetables', 'Fruits', 'Grains', 'Spices', 'Others'];

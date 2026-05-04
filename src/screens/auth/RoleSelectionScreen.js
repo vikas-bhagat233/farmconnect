@@ -42,9 +42,7 @@ export default function RoleSelectionScreen({ navigation }) {
     const result = await saveUserRole(selectedRole);
     setLoading(false);
 
-    if (result.success) {
-      navigation.replace('Home');
-    } else {
+    if (!result.success) {
       Alert.alert('Error', 'Failed to save role');
     }
   };

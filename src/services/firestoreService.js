@@ -41,6 +41,12 @@ export const getFarmerById = async (farmerId) => {
   return farmerDoc.exists() ? farmerDoc.data() : null;
 };
 
+export const getFarmerReviews = async (farmerId) => {
+  const reviewsQuery = query(collection(db, 'reviews'), where('farmerId', '==', farmerId));
+  const snapshot = await getDocs(reviewsQuery);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
 // Farmer Stats
 export const getFarmerStats = async (farmerId) => {
   const cropsQuery = query(collection(db, 'crops'), where('farmerId', '==', farmerId));

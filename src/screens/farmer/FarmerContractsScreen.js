@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
-import { getFarmerContracts, updateContractStatus } from '../../services/firestoreService';
+import { getFarmerContracts, updateContractStatus } from '../../services/contractService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function FarmerContractsScreen({ navigation }) {

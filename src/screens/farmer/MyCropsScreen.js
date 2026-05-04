@@ -9,7 +9,7 @@ import {
   Alert,
   RefreshControl
 } from 'react-native';
-import { getFarmerCrops, deleteCrop } from '../../services/firestoreService';
+import { getFarmerCrops, deleteCrop } from '../../services/cropService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function MyCropsScreen({ navigation }) {

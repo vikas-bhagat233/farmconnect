@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
-import { getFarmerById, getFarmerCrops, getFarmerReviews } from '../../services/firestoreService';
+import { getFarmerById, getFarmerReviews } from '../../services/firestoreService';
+import { getFarmerCrops } from '../../services/cropService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function FarmerProfileScreen({ navigation, route }) {

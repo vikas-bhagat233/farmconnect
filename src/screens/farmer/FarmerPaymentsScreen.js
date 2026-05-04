@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
-import { getFarmerPayments, updatePaymentStatus } from '../../services/firestoreService';
+import { getFarmerPayments, updatePaymentStatus } from '../../services/paymentService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function FarmerPaymentsScreen({ navigation }) {
