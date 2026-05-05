@@ -5,8 +5,10 @@ import {
   StyleSheet,
   Image
 } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function ChatbotMessage({ message, language }) {
+  const { colors, isDark } = useTheme();
   const isUser = message.isUser;
   
   const formatTime = (timestamp) => {
@@ -21,11 +23,15 @@ export default function ChatbotMessage({ message, language }) {
         </View>
       )}
       
-      <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble]}>
-        <Text style={[styles.message, isUser ? styles.userMessage : styles.botMessage]}>
+      <View style={[
+        styles.bubble, 
+        isUser ? styles.userBubble : [styles.botBubble, { backgroundColor: colors.card, elevation: isDark ? 0 : 1 }],
+        !isUser && isDark && { borderWidth: 1, borderColor: colors.border }
+      ]}>
+        <Text style={[styles.message, isUser ? styles.userMessage : { color: colors.text }]}>
           {message.text}
         </Text>
-        <Text style={styles.time}>{formatTime(message.timestamp)}</Text>
+        <Text style={[styles.time, { color: colors.textSecondary }]}>{formatTime(message.timestamp)}</Text>
       </View>
       
       {isUser && (

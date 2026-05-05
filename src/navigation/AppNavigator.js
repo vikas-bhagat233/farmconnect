@@ -17,6 +17,7 @@ import CropDetailScreen from '../screens/buyer/CropDetailScreen';
 import NegotiationScreen from '../screens/buyer/NegotiationScreen';
 import AddCropScreen from '../screens/farmer/AddCropScreen';
 import EditCropScreen from '../screens/farmer/EditCropScreen';
+import FarmerCropDetailScreen from '../screens/farmer/CropDetailScreen';
 
 const Stack = createStackNavigator();
 
@@ -45,6 +46,7 @@ export default function AppNavigator() {
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
           <Stack.Screen name="AddCrop" component={AddCropScreen} options={{ headerShown: true, title: 'Add New Crop' }} />
           <Stack.Screen name="EditCrop" component={EditCropScreen} options={{ headerShown: true, title: 'Edit Crop' }} />
+          <Stack.Screen name="CropDetail" component={FarmerCropDetailScreen} options={{ headerShown: true, title: 'Crop Details' }} />
         </>
       ) : (
         <>

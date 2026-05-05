@@ -11,10 +11,14 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getUserProfile } from '../../services/firestoreService';
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -42,12 +46,12 @@ export default function ProfileScreen({ navigation }) {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
+      t('logout') || 'Logout',
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
-          text: 'Logout', 
+          text: t('logout') || 'Logout', 
           style: 'destructive',
           onPress: async () => {
             await logout();
@@ -60,16 +64,16 @@ export default function ProfileScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Profile Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         {user?.photoURL ? (
           <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
         ) : (
@@ -77,9 +81,9 @@ export default function ProfileScreen({ navigation }) {
             <Text style={{ fontSize: 40, color: '#fff' }}>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</Text>
           </View>
         )}
-        <Text style={styles.name}>{user?.displayName || 'User'}</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-        <Text style={styles.role}>{profile?.role === 'farmer' ? '👨‍🌾 Farmer' : '🛒 Buyer'}</Text>
+        <Text style={[styles.name, { color: colors.text }]}>{user?.displayName || 'User'}</Text>
+        <Text style={[styles.email, { color: colors.textSecondary }]}>{user?.email}</Text>
+        <Text style={styles.role}>{profile?.role === 'farmer' ? '👨‍🌾 ' + (t('farmer') || 'Farmer') : '🛒 ' + (t('buyer') || 'Buyer')}</Text>
         <TouchableOpacity 
           style={styles.editButton}
           onPress={() => navigation.navigate('EditProfile')}
@@ -90,49 +94,49 @@ export default function ProfileScreen({ navigation }) {
 
       {/* Stats */}
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
+        <View style={[styles.statCard, { backgroundColor: colors.card }]}>
           <Text style={styles.statValue}>{stats.contracts}</Text>
-          <Text style={styles.statLabel}>Contracts</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('contracts') || 'Contracts'}</Text>
         </View>
         {profile?.role === 'farmer' && (
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.card }]}>
             <Text style={styles.statValue}>{stats.crops}</Text>
-            <Text style={styles.statLabel}>Crops Listed</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('crops') || 'Crops Listed'}</Text>
           </View>
         )}
-        <View style={styles.statCard}>
+        <View style={[styles.statCard, { backgroundColor: colors.card }]}>
           <Text style={styles.statValue}>{stats.rating}</Text>
-          <Text style={styles.statLabel}>Rating</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Rating</Text>
         </View>
       </View>
 
       {/* Info Sections */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Contact Information</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact Information</Text>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Phone:</Text>
-          <Text style={styles.infoValue}>{profile?.phone || 'Not provided'}</Text>
+          <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Phone:</Text>
+          <Text style={[styles.infoValue, { color: colors.text }]}>{profile?.phone || 'Not provided'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Email:</Text>
-          <Text style={styles.infoValue}>{user?.email}</Text>
+          <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Email:</Text>
+          <Text style={[styles.infoValue, { color: colors.text }]}>{user?.email}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Location:</Text>
-          <Text style={styles.infoValue}>{profile?.location || 'Not provided'}</Text>
+          <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Location:</Text>
+          <Text style={[styles.infoValue, { color: colors.text }]}>{profile?.location || 'Not provided'}</Text>
         </View>
       </View>
 
       {profile?.role === 'farmer' && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Farm Details</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Farm Details</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Farm Name:</Text>
-            <Text style={styles.infoValue}>{profile?.farmName || 'Not provided'}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Farm Name:</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{profile?.farmName || 'Not provided'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Farm Size:</Text>
-            <Text style={styles.infoValue}>{profile?.farmSize || 'Not provided'}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Farm Size:</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{profile?.farmSize || 'Not provided'}</Text>
           </View>
         </View>
       )}
@@ -140,17 +144,17 @@ export default function ProfileScreen({ navigation }) {
       {/* Action Buttons */}
       <View style={styles.actionsContainer}>
         <TouchableOpacity 
-          style={styles.settingsButton}
+          style={[styles.settingsButton, { backgroundColor: colors.card }]}
           onPress={() => navigation.navigate('Settings')}
         >
-          <Text style={styles.settingsButtonText}>⚙️ Settings</Text>
+          <Text style={[styles.settingsButtonText, { color: colors.text }]}>⚙️ {t('settings') || 'Settings'}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.logoutButton}
           onPress={handleLogout}
         >
-          <Text style={styles.logoutButtonText}>🚪 Logout</Text>
+          <Text style={styles.logoutButtonText}>🚪 {t('logout') || 'Logout'}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

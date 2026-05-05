@@ -11,9 +11,13 @@ import {
 } from 'react-native';
 import { getBuyerContracts, updateContractStatus, downloadContractPDF } from '../../services/contractService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function BuyerContractsScreen({ navigation }) {
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
@@ -76,22 +80,22 @@ export default function BuyerContractsScreen({ navigation }) {
 
   const renderContract = ({ item }) => (
     <TouchableOpacity 
-      style={styles.contractCard}
+      style={[styles.contractCard, { backgroundColor: colors.card }]}
       onPress={() => navigation.navigate('ContractDetails', { contractId: item.id })}
     >
       <View style={styles.contractHeader}>
-        <Text style={styles.farmerName}>{item.farmerName}</Text>
+        <Text style={[styles.farmerName, { color: colors.text }]}>{item.farmerName}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
           <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
         </View>
       </View>
 
       <View style={styles.contractDetails}>
-        <Text style={styles.cropName}>🌾 {item.cropName}</Text>
-        <Text style={styles.details}>📦 Quantity: {item.quantity} kg</Text>
-        <Text style={styles.details}>💰 Price: ₹{item.agreedPrice}/kg</Text>
+        <Text style={[styles.cropName, { color: colors.text }]}>🌾 {item.cropName}</Text>
+        <Text style={[styles.details, { color: colors.textSecondary }]}>📦 Quantity: {item.quantity} kg</Text>
+        <Text style={[styles.details, { color: colors.textSecondary }]}>💰 Price: ₹{item.agreedPrice}/kg</Text>
         <Text style={styles.totalAmount}>💵 Total: ₹{item.totalAmount}</Text>
-        <Text style={styles.date}>📅 Created: {new Date(item.createdAt).toLocaleDateString()}</Text>
+        <Text style={[styles.date, { color: colors.textSecondary }]}>📅 Created: {new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
 
       {item.status === 'active' && (
@@ -128,36 +132,36 @@ export default function BuyerContractsScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.tabContainer}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.tabContainer, { backgroundColor: colors.card }]}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'active' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'active' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('active')}
         >
-          <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'active' && { color: colors.primary, fontWeight: 'bold' }]}>
             Active
           </Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'pending' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('pending')}
         >
-          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'pending' && { color: colors.primary, fontWeight: 'bold' }]}>
             Pending
           </Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'completed' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'completed' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('completed')}
         >
-          <Text style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'completed' && { color: colors.primary, fontWeight: 'bold' }]}>
             Completed
           </Text>
         </TouchableOpacity>
@@ -169,7 +173,7 @@ export default function BuyerContractsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No {activeTab} contracts found</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No {activeTab} contracts found</Text>
           </View>
         }
       />

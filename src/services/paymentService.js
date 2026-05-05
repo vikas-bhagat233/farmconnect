@@ -102,21 +102,21 @@ export const getPaymentDetails = async (contractId, type) => {
 export const getFarmerPayments = async (farmerId) => {
   const paymentsQuery = query(
     collection(db, 'payments'),
-    where('farmerId', '==', farmerId),
-    orderBy('createdAt', 'desc')
+    where('farmerId', '==', farmerId)
   );
   const snapshot = await getDocs(paymentsQuery);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const payments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return payments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 };
 
 export const getBuyerPayments = async (buyerId) => {
   const paymentsQuery = query(
     collection(db, 'payments'),
-    where('buyerId', '==', buyerId),
-    orderBy('createdAt', 'desc')
+    where('buyerId', '==', buyerId)
   );
   const snapshot = await getDocs(paymentsQuery);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const payments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return payments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 };
 
 export const updatePaymentStatus = async (paymentId, status) => {

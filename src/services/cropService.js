@@ -62,22 +62,22 @@ export const getCropById = async (cropId) => {
 export const getFarmerCrops = async (farmerId) => {
   const cropsQuery = query(
     collection(db, 'crops'),
-    where('farmerId', '==', farmerId),
-    orderBy('createdAt', 'desc')
+    where('farmerId', '==', farmerId)
   );
   const snapshot = await getDocs(cropsQuery);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const crops = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return crops.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 };
 
 export const getMarketplaceCrops = async (filters = {}) => {
   let cropsQuery = query(
     collection(db, 'crops'),
-    where('status', '==', 'available'),
-    orderBy('createdAt', 'desc')
+    where('status', '==', 'available')
   );
   
   const snapshot = await getDocs(cropsQuery);
   let crops = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  crops.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   
   // Apply filters
   if (filters.category && filters.category !== 'All') {

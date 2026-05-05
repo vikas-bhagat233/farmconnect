@@ -9,12 +9,17 @@ import {
   ActivityIndicator
 } from 'react-native';
 
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+
 export default function ChatList({
   chats,
   loading,
   onChatPress,
   currentUserId
 }) {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -30,17 +35,17 @@ export default function ChatList({
   };
 
   const renderChat = ({ item }) => (
-    <TouchableOpacity style={styles.chatCard} onPress={() => onChatPress(item)}>
+    <TouchableOpacity style={[styles.chatCard, { backgroundColor: colors.card, borderBottomColor: colors.border }]} onPress={() => onChatPress(item)}>
       <Image source={{ uri: item.avatar }} style={styles.avatar} />
       
       <View style={styles.chatInfo}>
         <View style={styles.chatHeader}>
-          <Text style={styles.userName}>{item.userName}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{item.userName}</Text>
           <Text style={styles.timestamp}>{formatTime(item.lastMessageTime)}</Text>
         </View>
         
         <View style={styles.messagePreview}>
-          <Text style={styles.lastMessage} numberOfLines={1}>
+          <Text style={[styles.lastMessage, { color: colors.textSecondary }]} numberOfLines={1}>
             {item.lastMessage}
           </Text>
           {item.unreadCount > 0 && (
@@ -69,8 +74,8 @@ export default function ChatList({
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>💬</Text>
-          <Text style={styles.emptyText}>No conversations yet</Text>
-          <Text style={styles.emptySubtext}>Start chatting with farmers or buyers</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No conversations yet</Text>
+          <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start chatting with farmers or buyers</Text>
         </View>
       }
     />

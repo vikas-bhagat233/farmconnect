@@ -13,10 +13,12 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { addCrop } from '../../services/cropService';
 import { uploadToCloudinary } from '../../services/cloudinaryService';
+import { useAuth } from '../../context/AuthContext';
 
 const CROP_CATEGORIES = ['Vegetables', 'Fruits', 'Grains', 'Spices', 'Others'];
 
 export default function AddCropScreen({ navigation }) {
+  const { user } = useAuth();
   const [cropData, setCropData] = useState({
     name: '',
     category: '',
@@ -68,6 +70,8 @@ export default function AddCropScreen({ navigation }) {
 
     const result = await addCrop({
       ...cropData,
+      farmerId: user.uid,
+      farmerName: user.displayName || 'Farmer',
       images: imageUrls,
       quantity: parseInt(cropData.quantity),
       price: parseInt(cropData.price)

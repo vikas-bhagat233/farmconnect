@@ -10,7 +10,7 @@ import {
   Share,
   ActivityIndicator
 } from 'react-native';
-import { getCropById, updateCropStatus } from '../../services/firestoreService';
+import { getCropById, updateCropStatus } from '../../services/cropService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function CropDetailScreen({ navigation, route }) {

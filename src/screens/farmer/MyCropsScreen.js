@@ -12,9 +12,13 @@ import {
 } from 'react-native';
 import { getFarmerCrops, deleteCrop } from '../../services/cropService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function MyCropsScreen({ navigation }) {
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [crops, setCrops] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -49,14 +53,14 @@ export default function MyCropsScreen({ navigation }) {
 
   const renderCrop = ({ item }) => (
     <TouchableOpacity 
-      style={styles.cropCard}
+      style={[styles.cropCard, { backgroundColor: colors.card }]}
       onPress={() => navigation.navigate('CropDetail', { cropId: item.id })}
     >
       <Image source={{ uri: item.images[0] }} style={styles.cropImage} />
       <View style={styles.cropInfo}>
-        <Text style={styles.cropName}>{item.name}</Text>
+        <Text style={[styles.cropName, { color: colors.text }]}>{item.name}</Text>
         <Text style={styles.cropPrice}>₹{item.price}/kg</Text>
-        <Text style={styles.cropQuantity}>{item.quantity} kg available</Text>
+        <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{item.quantity} kg available</Text>
         <View style={styles.statusBadge}>
           <Text style={styles.statusText}>
             {item.contractId ? 'Under Contract' : 'Available'}
@@ -73,7 +77,7 @@ export default function MyCropsScreen({ navigation }) {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={crops}
         renderItem={renderCrop}
@@ -83,7 +87,7 @@ export default function MyCropsScreen({ navigation }) {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No crops added yet</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No crops added yet</Text>
             <TouchableOpacity 
               style={styles.addButton}
               onPress={() => navigation.navigate('AddCrop')}

@@ -12,7 +12,9 @@ import {
   TextInput,
   Modal
 } from 'react-native';
-import { getCropById, getFarmerById } from '../../services/firestoreService';
+import { getFarmerById } from '../../services/firestoreService';
+import { getCropById } from '../../services/cropService';
+import { getMarketPrice } from '../../services/marketPriceService';
 import { useAuth } from '../../context/AuthContext';
 
 export default function CropDetailScreen({ navigation, route }) {
@@ -25,6 +27,7 @@ export default function CropDetailScreen({ navigation, route }) {
   const [negotiationPrice, setNegotiationPrice] = useState('');
   const [negotiationQuantity, setNegotiationQuantity] = useState('');
   const [selectedImage, setSelectedImage] = useState(0);
+  const [marketPrice, setMarketPrice] = useState(null);
 
   useEffect(() => {
     loadCropDetails();
@@ -38,6 +41,16 @@ export default function CropDetailScreen({ navigation, route }) {
       const farmerData = await getFarmerById(cropData.farmerId);
       setFarmer(farmerData);
     }
+    
+    try {
+      const mPrice = await getMarketPrice(cropData.name);
+      if (mPrice && mPrice.currentPrice) {
+        setMarketPrice(mPrice.currentPrice);
+      }
+    } catch (err) {
+      console.log('Market price fetch failed:', err.message);
+    }
+    
     setLoading(false);
   };
 
@@ -150,12 +163,12 @@ export default function CropDetailScreen({ navigation, route }) {
             </View>
             <View style={styles.priceItem}>
               <Text style={styles.priceItemLabel}>Market Avg</Text>
-              <Text style={styles.priceItemValue}>₹{crop.marketPrice || crop.price + 5}</Text>
+              <Text style={styles.priceItemValue}>₹{marketPrice || crop.marketPrice || crop.price + 5}</Text>
             </View>
             <View style={styles.priceItem}>
               <Text style={styles.priceItemLabel}>You Save</Text>
               <Text style={[styles.priceItemValue, { color: '#4CAF50' }]}>
-                ₹{crop.marketPrice ? crop.marketPrice - crop.price : 5}
+                ₹{((marketPrice || crop.marketPrice || crop.price + 5) - crop.price).toFixed(2)}
               </Text>
             </View>
           </View>

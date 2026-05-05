@@ -10,10 +10,15 @@ import {
   Image
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getFarmerStats, getRecentCrops } from '../../services/firestoreService';
+import ChatbotModal from '../../components/chatbot/ChatbotModal';
 
 export default function FarmerDashboardScreen({ navigation }) {
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [stats, setStats] = useState({
     totalCrops: 0,
     activeContracts: 0,
@@ -22,6 +27,7 @@ export default function FarmerDashboardScreen({ navigation }) {
   });
   const [recentCrops, setRecentCrops] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -43,14 +49,15 @@ export default function FarmerDashboardScreen({ navigation }) {
   };
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.welcomeText}>Welcome, {user?.displayName || 'Farmer'}</Text>
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <Text style={[styles.welcomeText, { color: colors.text }]}>{t('welcome')}, {user?.displayName || 'Farmer'}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
           {user?.photoURL ? (
             <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
@@ -63,21 +70,21 @@ export default function FarmerDashboardScreen({ navigation }) {
       </View>
 
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
+        <View style={[styles.statCard, { backgroundColor: colors.card }]}>
           <Text style={styles.statValue}>{stats.totalCrops}</Text>
-          <Text style={styles.statLabel}>Total Crops</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('total')} {t('crops')}</Text>
         </View>
-        <View style={styles.statCard}>
+        <View style={[styles.statCard, { backgroundColor: colors.card }]}>
           <Text style={styles.statValue}>{stats.activeContracts}</Text>
-          <Text style={styles.statLabel}>Active Contracts</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('active')} {t('contracts')}</Text>
         </View>
-        <View style={styles.statCard}>
+        <View style={[styles.statCard, { backgroundColor: colors.card }]}>
           <Text style={styles.statValue}>{stats.completedContracts}</Text>
-          <Text style={styles.statLabel}>Completed</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('completed')}</Text>
         </View>
-        <View style={styles.statCard}>
+        <View style={[styles.statCard, { backgroundColor: colors.card }]}>
           <Text style={styles.statValue}>₹{stats.totalEarnings}</Text>
-          <Text style={styles.statLabel}>Earnings</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Earnings</Text>
         </View>
       </View>
 
@@ -85,25 +92,33 @@ export default function FarmerDashboardScreen({ navigation }) {
         style={styles.addButton}
         onPress={() => navigation.navigate('AddCrop')}
       >
-        <Text style={styles.addButtonText}>+ Add New Crop</Text>
+        <Text style={styles.addButtonText}>+ {t('addCrop')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.sectionTitle}>Recent Crops</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent {t('crops')}</Text>
       {recentCrops.map((crop) => (
         <TouchableOpacity 
           key={crop.id} 
-          style={styles.cropCard}
+          style={[styles.cropCard, { backgroundColor: colors.card }]}
           onPress={() => navigation.navigate('CropDetail', { cropId: crop.id })}
         >
           <Image source={{ uri: crop.images[0] }} style={styles.cropImage} />
           <View style={styles.cropInfo}>
-            <Text style={styles.cropName}>{crop.name}</Text>
+            <Text style={[styles.cropName, { color: colors.text }]}>{crop.name}</Text>
             <Text style={styles.cropPrice}>₹{crop.price}/kg</Text>
-            <Text style={styles.cropQuantity}>{crop.quantity} kg available</Text>
+            <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{crop.quantity} kg available</Text>
           </View>
         </TouchableOpacity>
       ))}
     </ScrollView>
+      <TouchableOpacity 
+        style={styles.chatbotFab} 
+        onPress={() => setShowChatbot(true)}
+      >
+        <Text style={styles.chatbotFabText}>🤖</Text>
+      </TouchableOpacity>
+      <ChatbotModal visible={showChatbot} onClose={() => setShowChatbot(false)} />
+    </View>
   );
 }
 
@@ -205,5 +220,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 5,
+  },
+  chatbotFab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#2196F3',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  chatbotFabText: {
+    fontSize: 30,
   },
 });

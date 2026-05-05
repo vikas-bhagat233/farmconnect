@@ -99,19 +99,18 @@ export const getBuyerStats = async (buyerId) => {
 export const getRecentCrops = async (farmerId, limitCount = 5) => {
   const cropsQuery = query(
     collection(db, 'crops'),
-    where('farmerId', '==', farmerId),
-    orderBy('createdAt', 'desc'),
-    limit(limitCount)
+    where('farmerId', '==', farmerId)
   );
   const snapshot = await getDocs(cropsQuery);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const crops = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  crops.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return crops.slice(0, limitCount);
 };
 
 export const getFarmerHistory = async (farmerId) => {
   const contractsQuery = query(
     collection(db, 'contracts'),
-    where('farmerId', '==', farmerId),
-    orderBy('createdAt', 'desc')
+    where('farmerId', '==', farmerId)
   );
   const contractsSnapshot = await getDocs(contractsQuery);
   
@@ -129,14 +128,13 @@ export const getFarmerHistory = async (farmerId) => {
     });
   });
   
-  return history;
+  return history.sort((a, b) => new Date(b.date) - new Date(a.date));
 };
 
 export const getBuyerHistory = async (buyerId) => {
   const contractsQuery = query(
     collection(db, 'contracts'),
-    where('buyerId', '==', buyerId),
-    orderBy('createdAt', 'desc')
+    where('buyerId', '==', buyerId)
   );
   const contractsSnapshot = await getDocs(contractsQuery);
   
@@ -154,5 +152,5 @@ export const getBuyerHistory = async (buyerId) => {
     });
   });
   
-  return history;
+  return history.sort((a, b) => new Date(b.date) - new Date(a.date));
 };

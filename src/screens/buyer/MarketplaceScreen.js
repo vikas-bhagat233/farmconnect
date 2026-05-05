@@ -10,8 +10,12 @@ import {
   RefreshControl
 } from 'react-native';
 import { getMarketplaceCrops } from '../../services/cropService';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function MarketplaceScreen({ navigation }) {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [crops, setCrops] = useState([]);
   const [filteredCrops, setFilteredCrops] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,15 +42,15 @@ export default function MarketplaceScreen({ navigation }) {
 
   const renderCrop = ({ item }) => (
     <TouchableOpacity 
-      style={styles.cropCard}
+      style={[styles.cropCard, { backgroundColor: colors.card }]}
       onPress={() => navigation.navigate('CropDetail', { cropId: item.id })}
     >
       <Image source={{ uri: item.images[0] }} style={styles.cropImage} />
       <View style={styles.cropInfo}>
-        <Text style={styles.cropName}>{item.name}</Text>
+        <Text style={[styles.cropName, { color: colors.text }]}>{item.name}</Text>
         <Text style={styles.cropPrice}>₹{item.price}/kg</Text>
-        <Text style={styles.cropQuantity}>{item.quantity} kg available</Text>
-        <Text style={styles.farmerName}>👨‍🌾 {item.farmerName}</Text>
+        <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{item.quantity} kg available</Text>
+        <Text style={[styles.farmerName, { color: colors.textSecondary }]}>👨‍🌾 {item.farmerName}</Text>
         <View style={styles.ratingContainer}>
           <Text style={styles.rating}>⭐ {item.rating || 4.5}</Text>
         </View>
@@ -61,11 +65,12 @@ export default function MarketplaceScreen({ navigation }) {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search crops..."
+          style={[styles.searchInput, { backgroundColor: colors.background, color: colors.text }]}
+          placeholder={t('search') || "Search crops..."}
+          placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={handleSearch}
         />
@@ -80,7 +85,7 @@ export default function MarketplaceScreen({ navigation }) {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No crops available</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No crops available</Text>
           </View>
         }
       />

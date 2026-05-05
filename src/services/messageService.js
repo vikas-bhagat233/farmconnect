@@ -29,11 +29,11 @@ export const getMessages = async (userId1, userId2) => {
   const messagesQuery = query(
     collection(db, 'messages'),
     where('senderId', 'in', [userId1, userId2]),
-    where('receiverId', 'in', [userId1, userId2]),
-    orderBy('createdAt', 'asc')
+    where('receiverId', 'in', [userId1, userId2])
   );
   const snapshot = await getDocs(messagesQuery);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 };
 
 export const markMessagesAsRead = async (userId, senderId) => {
@@ -53,13 +53,11 @@ export const markMessagesAsRead = async (userId, senderId) => {
 export const getChatList = async (userId) => {
   const sentQuery = query(
     collection(db, 'messages'),
-    where('senderId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('senderId', '==', userId)
   );
   const receivedQuery = query(
     collection(db, 'messages'),
-    where('receiverId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('receiverId', '==', userId)
   );
   
   const [sentSnapshot, receivedSnapshot] = await Promise.all([

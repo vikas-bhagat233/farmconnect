@@ -7,6 +7,7 @@ import {
   Modal,
   FlatList
 } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇬🇧', nativeName: 'English' },
@@ -15,6 +16,7 @@ const languages = [
 ];
 
 export default function LanguageSelector({ language, setLanguage, variant = 'button' }) {
+  const { colors, isDark } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
 
   const currentLanguage = languages.find(l => l.code === language);
@@ -32,14 +34,16 @@ export default function LanguageSelector({ language, setLanguage, variant = 'but
             key={lang.code}
             style={[
               styles.inlineChip,
-              language === lang.code && styles.inlineChipActive
+              { backgroundColor: isDark ? colors.card : '#f0f0f0' },
+              language === lang.code && { backgroundColor: colors.primary }
             ]}
             onPress={() => selectLanguage(lang.code)}
           >
             <Text style={styles.inlineFlag}>{lang.flag}</Text>
             <Text style={[
               styles.inlineName,
-              language === lang.code && styles.inlineNameActive
+              { color: colors.text },
+              language === lang.code && { color: '#fff' }
             ]}>
               {lang.nativeName}
             </Text>
@@ -51,10 +55,10 @@ export default function LanguageSelector({ language, setLanguage, variant = 'but
 
   return (
     <>
-      <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity style={[styles.button, { backgroundColor: isDark ? colors.card : '#fff' }]} onPress={() => setModalVisible(true)}>
         <Text style={styles.flag}>{currentLanguage?.flag}</Text>
-        <Text style={styles.buttonText}>{currentLanguage?.nativeName}</Text>
-        <Text style={styles.dropdownIcon}>▼</Text>
+        <Text style={[styles.buttonText, { color: colors.text }]}>{currentLanguage?.nativeName}</Text>
+        <Text style={[styles.dropdownIcon, { color: colors.textSecondary }]}>▼</Text>
       </TouchableOpacity>
 
       <Modal visible={modalVisible} transparent={true} animationType="fade">
@@ -63,24 +67,25 @@ export default function LanguageSelector({ language, setLanguage, variant = 'but
           activeOpacity={1} 
           onPress={() => setModalVisible(false)}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Language</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Language</Text>
             {languages.map((lang) => (
               <TouchableOpacity
                 key={lang.code}
                 style={[
                   styles.languageOption,
-                  language === lang.code && styles.languageOptionActive
+                  { borderBottomColor: colors.border },
+                  language === lang.code && { backgroundColor: isDark ? colors.background : '#E8F5E9' }
                 ]}
                 onPress={() => selectLanguage(lang.code)}
               >
                 <Text style={styles.languageFlag}>{lang.flag}</Text>
                 <View style={styles.languageInfo}>
-                  <Text style={styles.languageName}>{lang.name}</Text>
-                  <Text style={styles.languageNative}>{lang.nativeName}</Text>
+                  <Text style={[styles.languageName, { color: colors.text }]}>{lang.name}</Text>
+                  <Text style={[styles.languageNative, { color: colors.textSecondary }]}>{lang.nativeName}</Text>
                 </View>
                 {language === lang.code && (
-                  <Text style={styles.checkmark}>✓</Text>
+                  <Text style={[styles.checkmark, { color: colors.primary }]}>✓</Text>
                 )}
               </TouchableOpacity>
             ))}

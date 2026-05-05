@@ -10,9 +10,13 @@ import {
 } from 'react-native';
 import { getBuyerPayments } from '../../services/paymentService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function BuyerPaymentsScreen({ navigation }) {
   const { user } = useAuth();
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({
@@ -68,20 +72,20 @@ export default function BuyerPaymentsScreen({ navigation }) {
   };
 
   const renderPayment = ({ item }) => (
-    <View style={styles.paymentCard}>
-      <View style={styles.paymentHeader}>
-        <Text style={styles.contractId}>Contract #{item.contractId.slice(-6)}</Text>
+    <View style={[styles.paymentCard, { backgroundColor: colors.card }]}>
+      <View style={[styles.paymentHeader, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.contractId, { color: colors.textSecondary }]}>Contract #{item.contractId.slice(-6)}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
           <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
         </View>
       </View>
 
       <View style={styles.paymentDetails}>
-        <Text style={styles.cropName}>🌾 {item.cropName}</Text>
-        <Text style={styles.farmerName}>👨‍🌾 {item.farmerName}</Text>
+        <Text style={[styles.cropName, { color: colors.text }]}>🌾 {item.cropName}</Text>
+        <Text style={[styles.farmerName, { color: colors.textSecondary }]}>👨‍🌾 {item.farmerName}</Text>
         <Text style={styles.amount}>💰 Amount: ₹{item.amount}</Text>
-        <Text style={styles.paymentType}>💳 Type: {getPaymentTypeText(item.type)}</Text>
-        <Text style={styles.date}>📅 Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+        <Text style={[styles.paymentType, { color: colors.textSecondary }]}>💳 Type: {getPaymentTypeText(item.type)}</Text>
+        <Text style={[styles.date, { color: colors.textSecondary }]}>📅 Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
       </View>
 
       {item.status === 'pending' && (
@@ -104,27 +108,27 @@ export default function BuyerPaymentsScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Summary Cards */}
-      <View style={styles.summaryContainer}>
+      <View style={[styles.summaryContainer, { backgroundColor: colors.card }]}>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>₹{summary.totalPaid}</Text>
-          <Text style={styles.summaryLabel}>Total Paid</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>₹{summary.totalPaid}</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Paid</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#f44336' }]}>₹{summary.pendingPayments}</Text>
-          <Text style={styles.summaryLabel}>Pending</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Pending</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#FF9800' }]}>₹{summary.advancePaid}</Text>
-          <Text style={styles.summaryLabel}>Advance Paid</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Advance Paid</Text>
         </View>
       </View>
 
@@ -134,7 +138,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No payment records found</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No payment records found</Text>
           </View>
         }
       />

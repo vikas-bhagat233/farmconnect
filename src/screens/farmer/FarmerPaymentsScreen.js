@@ -10,9 +10,13 @@ import {
 } from 'react-native';
 import { getFarmerPayments, updatePaymentStatus } from '../../services/paymentService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function FarmerPaymentsScreen({ navigation }) {
   const { user } = useAuth();
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({
@@ -85,20 +89,20 @@ export default function FarmerPaymentsScreen({ navigation }) {
   };
 
   const renderPayment = ({ item }) => (
-    <View style={styles.paymentCard}>
-      <View style={styles.paymentHeader}>
-        <Text style={styles.contractId}>Contract #{item.contractId.slice(-6)}</Text>
+    <View style={[styles.paymentCard, { backgroundColor: colors.card }]}>
+      <View style={[styles.paymentHeader, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.contractId, { color: colors.textSecondary }]}>Contract #{item.contractId.slice(-6)}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getPaymentStatusColor(item.status) }]}>
           <Text style={styles.statusText}>{getPaymentStatusText(item.status)}</Text>
         </View>
       </View>
 
       <View style={styles.paymentDetails}>
-        <Text style={styles.cropName}>🌾 {item.cropName}</Text>
-        <Text style={styles.buyerName}>👤 {item.buyerName}</Text>
+        <Text style={[styles.cropName, { color: colors.text }]}>🌾 {item.cropName}</Text>
+        <Text style={[styles.buyerName, { color: colors.textSecondary }]}>👤 {item.buyerName}</Text>
         <Text style={styles.amount}>💰 Amount: ₹{item.amount}</Text>
-        <Text style={styles.paymentType}>💳 Type: {item.type === 'advance' ? 'Advance Payment (30%)' : 'Remaining Payment (70%)'}</Text>
-        <Text style={styles.date}>📅 Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+        <Text style={[styles.paymentType, { color: colors.textSecondary }]}>💳 Type: {item.type === 'advance' ? 'Advance Payment (30%)' : 'Remaining Payment (70%)'}</Text>
+        <Text style={[styles.date, { color: colors.textSecondary }]}>📅 Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
       </View>
 
       {item.status === 'advance_paid' && (
@@ -129,20 +133,20 @@ export default function FarmerPaymentsScreen({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Summary Cards */}
-      <View style={styles.summaryContainer}>
+      <View style={[styles.summaryContainer, { backgroundColor: colors.card }]}>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>₹{summary.totalEarned}</Text>
-          <Text style={styles.summaryLabel}>Total Earned</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>₹{summary.totalEarned}</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Earned</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#FFC107' }]}>₹{summary.pendingAmount}</Text>
-          <Text style={styles.summaryLabel}>Pending</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Pending</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>₹{summary.receivedAmount}</Text>
-          <Text style={styles.summaryLabel}>Received</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Received</Text>
         </View>
       </View>
 
@@ -152,7 +156,7 @@ export default function FarmerPaymentsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No payment records found</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No payment records found</Text>
           </View>
         }
       />

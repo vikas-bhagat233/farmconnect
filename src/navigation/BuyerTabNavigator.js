@@ -7,6 +7,8 @@ import BuyerPaymentsScreen from '../screens/buyer/BuyerPaymentsScreen';
 import ProfileScreen from '../screens/common/ProfileScreen';
 import ChatList from '../components/chat/ChatList';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const Tab = createBottomTabNavigator();
 
@@ -35,8 +37,9 @@ const getLabel = (routeName) => {
 };
 
 function ChatsScreen() {
+  const { colors } = useTheme();
   return (
-    <View style={styles.chatContainer}>
+    <View style={[styles.chatContainer, { backgroundColor: colors.background }]}>
       <ChatList 
         chats={[]} 
         loading={false} 
@@ -47,6 +50,9 @@ function ChatsScreen() {
 }
 
 export default function BuyerTabNavigator() {
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -56,11 +62,11 @@ export default function BuyerTabNavigator() {
           </Text>
         ),
         tabBarLabel: ({ focused }) => (
-          <Text style={[styles.label, focused && styles.labelFocused]}>
-            {getLabel(route.name)}
+          <Text style={[styles.label, { color: colors.textSecondary }, focused && { color: colors.primary, fontWeight: 'bold' }]}>
+            {t(route.name.toLowerCase()) || getLabel(route.name)}
           </Text>
         ),
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { backgroundColor: colors.card, borderTopColor: colors.border }],
         headerShown: false,
       })}
     >

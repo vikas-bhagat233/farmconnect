@@ -77,21 +77,21 @@ export const updateContractStatus = async (contractId, status) => {
 export const getFarmerContracts = async (farmerId) => {
   const contractsQuery = query(
     collection(db, 'contracts'),
-    where('farmerId', '==', farmerId),
-    orderBy('createdAt', 'desc')
+    where('farmerId', '==', farmerId)
   );
   const snapshot = await getDocs(contractsQuery);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const contracts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return contracts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 };
 
 export const getBuyerContracts = async (buyerId) => {
   const contractsQuery = query(
     collection(db, 'contracts'),
-    where('buyerId', '==', buyerId),
-    orderBy('createdAt', 'desc')
+    where('buyerId', '==', buyerId)
   );
   const snapshot = await getDocs(contractsQuery);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const contracts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return contracts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 };
 
 export const generateContractPDF = async (contract) => {

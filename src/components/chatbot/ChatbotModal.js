@@ -9,15 +9,18 @@ import {
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  SafeAreaView
 } from 'react-native';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import ChatbotMessage from './ChatbotMessage';
 import LanguageSelector from './LanguageSelector';
+import { useTheme } from '../../context/ThemeContext';
 
-const ai = new GoogleGenAI({ apiKey: 'YOUR_GEMINI_API_KEY' });
+const genAI = new GoogleGenerativeAI(process.env.EXPO_PUBLIC_GEMINI_API_KEY);
 
 export default function ChatbotModal({ visible, onClose }) {
+  const { colors, isDark } = useTheme();
   const [messages, setMessages] = useState([
     {
       id: '1',
@@ -48,14 +51,12 @@ export default function ChatbotModal({ visible, onClose }) {
 
   const getGeminiResponse = async (userMessage) => {
     try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
       const prompt = `You are a helpful farming assistant for Indian farmers. Respond in ${language === 'en' ? 'English' : language === 'hi' ? 'Hindi' : 'Marathi'}. User question: ${userMessage}`;
       
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
-        contents: prompt,
-      });
-      
-      return response.text;
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
     } catch (error) {
       console.error('Gemini API Error:', error);
       return getFallbackResponse(userMessage, language);
@@ -129,8 +130,8 @@ export default function ChatbotModal({ visible, onClose }) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: isDark ? colors.card : '#4CAF50', borderBottomColor: colors.border }]}>
           <Text style={styles.title}>{translations[language].title}</Text>
           <LanguageSelector language={language} setLanguage={setLanguage} />
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -151,11 +152,11 @@ export default function ChatbotModal({ visible, onClose }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
               placeholder={translations[language].placeholder}
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
               value={inputText}
               onChangeText={setInputText}
               multiline

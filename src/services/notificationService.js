@@ -47,11 +47,11 @@ export const sendNotification = async (userId, title, body, data = {}) => {
 export const getNotifications = async (userId) => {
   const notificationsQuery = query(
     collection(db, 'notifications'),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('userId', '==', userId)
   );
   const snapshot = await getDocs(notificationsQuery);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 };
 
 export const getUnreadCount = async (userId) => {
