@@ -15,6 +15,7 @@ import SettingsScreen from '../screens/common/SettingsScreen';
 import FarmerProfileScreen from '../screens/buyer/FarmerProfileScreen';
 import CropDetailScreen from '../screens/buyer/CropDetailScreen';
 import NegotiationScreen from '../screens/buyer/NegotiationScreen';
+import MakeContractScreen from '../screens/buyer/MakeContractScreen';
 import AddCropScreen from '../screens/farmer/AddCropScreen';
 import EditCropScreen from '../screens/farmer/EditCropScreen';
 import FarmerCropDetailScreen from '../screens/farmer/CropDetailScreen';
@@ -47,6 +48,8 @@ export default function AppNavigator() {
           <Stack.Screen name="AddCrop" component={AddCropScreen} options={{ headerShown: true, title: 'Add New Crop' }} />
           <Stack.Screen name="EditCrop" component={EditCropScreen} options={{ headerShown: true, title: 'Edit Crop' }} />
           <Stack.Screen name="CropDetail" component={FarmerCropDetailScreen} options={{ headerShown: true, title: 'Crop Details' }} />
+          <Stack.Screen name="Negotiation" component={NegotiationScreen} options={{ headerShown: true, title: 'Negotiate' }} />
+          <Stack.Screen name="MakeContract" component={MakeContractScreen} options={{ headerShown: true, title: 'Contract Proposal' }} />
         </>
       ) : (
         <>
@@ -61,6 +64,7 @@ export default function AppNavigator() {
           <Stack.Screen name="FarmerProfile" component={FarmerProfileScreen} options={{ headerShown: true, title: 'Farmer Profile' }} />
           <Stack.Screen name="CropDetail" component={CropDetailScreen} options={{ headerShown: true, title: 'Crop Details' }} />
           <Stack.Screen name="Negotiation" component={NegotiationScreen} options={{ headerShown: true, title: 'Negotiate' }} />
+          <Stack.Screen name="MakeContract" component={MakeContractScreen} options={{ headerShown: true, title: 'Make Contract' }} />
         </>
       )}
     </Stack.Navigator>

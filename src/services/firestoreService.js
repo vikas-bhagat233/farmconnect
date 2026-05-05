@@ -61,7 +61,7 @@ export const getFarmerStats = async (farmerId) => {
   
   contractsSnapshot.forEach(doc => {
     const contract = doc.data();
-    if (contract.status === 'active') activeContracts++;
+    if (contract.status === 'active' || contract.status === 'pending') activeContracts++;
     if (contract.status === 'completed') {
       completedContracts++;
       totalEarnings += contract.totalAmount;
@@ -86,7 +86,7 @@ export const getBuyerStats = async (buyerId) => {
   
   contractsSnapshot.forEach(doc => {
     const contract = doc.data();
-    if (contract.status === 'active') activeContracts++;
+    if (contract.status === 'active' || contract.status === 'pending') activeContracts++;
     if (contract.status === 'completed') {
       completedContracts++;
       totalSpent += contract.totalAmount;
@@ -153,4 +153,51 @@ export const getBuyerHistory = async (buyerId) => {
   });
   
   return history.sort((a, b) => new Date(b.date) - new Date(a.date));
+};
+
+// Negotiation functions
+export const createNegotiation = async (data) => {
+  const negotiationRef = doc(collection(db, 'negotiations'));
+  const negotiationData = {
+    ...data,
+    id: negotiationRef.id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    messages: []
+  };
+  await setDoc(negotiationRef, negotiationData);
+  return negotiationData;
+};
+
+export const getNegotiation = async (cropId, buyerId, farmerId) => {
+  const q = query(
+    collection(db, 'negotiations'),
+    where('cropId', '==', cropId),
+    where('buyerId', '==', buyerId),
+    where('farmerId', '==', farmerId)
+  );
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+};
+
+export const sendNegotiationMessage = async (negotiationId, message) => {
+  const negotiationRef = doc(db, 'negotiations', negotiationId);
+  const negotiationDoc = await getDoc(negotiationRef);
+  if (!negotiationDoc.exists()) return;
+  
+  const messages = negotiationDoc.data().messages || [];
+  messages.push(message);
+  
+  const updateData = {
+    messages,
+    updatedAt: new Date().toISOString()
+  };
+  
+  // Update current offer if message contains one
+  if (message.offer) {
+    updateData.currentOffer = message.offer;
+  }
+  
+  await updateDoc(negotiationRef, updateData);
 };

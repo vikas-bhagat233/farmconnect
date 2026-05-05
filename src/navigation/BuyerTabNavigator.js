@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import BuyerDashboardScreen from '../screens/buyer/BuyerDashboardScreen';
 import MarketplaceScreen from '../screens/buyer/MarketplaceScreen';
@@ -9,6 +9,9 @@ import ChatList from '../components/chat/ChatList';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { getNegotiationList } from '../services/messageService';
+import { useFocusEffect } from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator();
 
@@ -36,14 +39,49 @@ const getLabel = (routeName) => {
   return labels[routeName] || routeName;
 };
 
-function ChatsScreen() {
+function ChatsScreen({ navigation }) {
+  const { user, userRole } = useAuth();
   const { colors } = useTheme();
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadChats();
+    }, [])
+  );
+
+  const loadChats = async () => {
+    setLoading(true);
+    try {
+      const data = await getNegotiationList(user.uid, userRole);
+      setChats(data);
+    } catch (error) {
+      console.error(error);
+    }
+    setLoading(false);
+  };
+
+  const handleChatPress = (chat) => {
+    navigation.navigate('Negotiation', {
+      cropId: chat.cropId,
+      cropName: chat.cropName,
+      farmerId: chat.farmerId,
+      farmerName: chat.farmerName,
+      originalPrice: chat.originalPrice,
+      maxQuantity: chat.maxQuantity,
+      proposedPrice: chat.proposedPrice,
+      proposedQuantity: chat.proposedQuantity,
+      buyerId: chat.buyerId
+    });
+  };
+
   return (
     <View style={[styles.chatContainer, { backgroundColor: colors.background }]}>
       <ChatList 
-        chats={[]} 
-        loading={false} 
-        onChatPress={() => {}} 
+        chats={chats} 
+        loading={loading} 
+        onChatPress={handleChatPress} 
       />
     </View>
   );

@@ -11,26 +11,30 @@ import {
   updateDoc,
   Timestamp
 } from './firebase';
+import { sendNotification } from './notificationService';
+import { sendNegotiationMessage } from './messageService';
 
 export const createContract = async (contractData) => {
   try {
     const contractRef = doc(collection(db, 'contracts'));
-    const totalAmount = contractData.quantity * contractData.agreedPrice;
-    const advanceAmount = totalAmount * 0.3;
-    const remainingAmount = totalAmount * 0.7;
+    const totalAmount = contractData.totalAmount || (contractData.quantity * contractData.agreedPrice);
+    const advanceAmount = contractData.advanceAmount !== undefined ? contractData.advanceAmount : (totalAmount * 0.3);
+    const remainingAmount = contractData.remainingAmount !== undefined ? contractData.remainingAmount : (totalAmount - advanceAmount);
     
-    await setDoc(contractRef, {
+    const finalContractData = {
       ...contractData,
       id: contractRef.id,
       totalAmount,
       advanceAmount,
       remainingAmount,
-      status: 'pending',
+      status: contractData.status || 'pending',
       advancePaid: false,
       fullPaid: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    });
+    };
+
+    await setDoc(contractRef, finalContractData);
     
     // Update crop status to under contract
     const cropRef = doc(db, 'crops', contractData.cropId);
@@ -38,6 +42,25 @@ export const createContract = async (contractData) => {
       status: 'under_contract',
       contractId: contractRef.id 
     });
+
+    // If there's a negotiation, add a system message
+    if (contractData.negotiationId) {
+      await sendNegotiationMessage(contractData.negotiationId, {
+        text: `📄 Contract Proposal Created: ₹${totalAmount} total (Advance: ₹${advanceAmount})`,
+        senderId: contractData.buyerId,
+        senderName: contractData.buyerName,
+        senderRole: 'buyer',
+        timestamp: new Date().toISOString(),
+        isSystem: true
+      });
+    }
+
+    // Send notification to the farmer
+    await sendNotification(
+      contractData.farmerId, 
+      'New Contract Proposal', 
+      `${contractData.buyerName} has proposed a contract for ${contractData.cropName}.`
+    );
     
     return { success: true, contractId: contractRef.id };
   } catch (error) {

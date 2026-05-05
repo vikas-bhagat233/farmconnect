@@ -22,14 +22,15 @@ const fetchCommodityRecords = async (cropName, limit = 50) => {
     throw new Error('Market price API is not configured.');
   }
 
-  const url = new URL(MARKET_API_URL);
-  url.searchParams.set('api-key', MARKET_API_KEY);
-  url.searchParams.set('format', 'json');
-  url.searchParams.set('limit', String(limit));
-  url.searchParams.set('filters[commodity]', normalizeCommodity(cropName));
-  url.searchParams.set('sort[arrival_date]', 'desc');
+  const queryParams = [
+    `api-key=${MARKET_API_KEY}`,
+    'format=json',
+    `limit=${limit}`,
+    `filters[commodity]=${encodeURIComponent(normalizeCommodity(cropName))}`,
+    'sort[arrival_date]=desc'
+  ].join('&');
 
-  const response = await fetch(url.toString());
+  const response = await fetch(`${MARKET_API_URL}?${queryParams}`);
   if (!response.ok) {
     throw new Error('Failed to fetch market price data.');
   }

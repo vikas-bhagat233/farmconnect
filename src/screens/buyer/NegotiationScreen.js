@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { createNegotiation, sendNegotiationMessage, getNegotiation } from '../../services/firestoreService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { sendNotification } from '../../services/notificationService';
 
 export default function NegotiationScreen({ navigation, route }) {
@@ -24,10 +25,12 @@ export default function NegotiationScreen({ navigation, route }) {
     originalPrice,
     maxQuantity,
     proposedPrice,
-    proposedQuantity 
+    proposedQuantity,
+    buyerId: routeBuyerId 
   } = route.params;
   
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
+  const { colors, isDark } = useTheme();
   const [negotiation, setNegotiation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -43,11 +46,14 @@ export default function NegotiationScreen({ navigation, route }) {
   const initializeNegotiation = async () => {
     setLoading(true);
     
+    const bId = userRole === 'buyer' ? user.uid : routeBuyerId;
+    const fId = userRole === 'farmer' ? user.uid : farmerId;
+
     // Check if negotiation exists
-    let negotiationData = await getNegotiation(cropId, user.uid, farmerId);
+    let negotiationData = await getNegotiation(cropId, bId, fId);
     
-    if (!negotiationData) {
-      // Create new negotiation
+    if (!negotiationData && userRole === 'buyer') {
+      // Only buyers can initiate a new negotiation
       negotiationData = await createNegotiation({
         cropId,
         cropName,
@@ -63,8 +69,14 @@ export default function NegotiationScreen({ navigation, route }) {
       });
     }
     
-    setNegotiation(negotiationData);
-    setMessages(negotiationData.messages || []);
+    if (negotiationData) {
+      setNegotiation(negotiationData);
+      setMessages(negotiationData.messages || []);
+    } else if (userRole === 'farmer') {
+      Alert.alert('Error', 'Negotiation not found');
+      navigation.goBack();
+    }
+    
     setLoading(false);
   };
 
@@ -76,7 +88,7 @@ export default function NegotiationScreen({ navigation, route }) {
       text: newMessage,
       senderId: user.uid,
       senderName: user.displayName,
-      senderRole: 'buyer',
+      senderRole: userRole,
       timestamp: new Date().toISOString()
     };
     
@@ -84,8 +96,9 @@ export default function NegotiationScreen({ navigation, route }) {
     setMessages([...messages, messageData]);
     setNewMessage('');
     
-    // Send notification to farmer
-    await sendNotification(farmerId, 'New Negotiation Message', `${user.displayName}: ${newMessage}`);
+    // Send notification to other party
+    const recipientId = userRole === 'buyer' ? farmerId : negotiation.buyerId;
+    await sendNotification(recipientId, 'New Negotiation Message', `${user.displayName}: ${newMessage}`);
     
     setSending(false);
   };
@@ -148,21 +161,21 @@ export default function NegotiationScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.cropName}>{cropName}</Text>
-        <Text style={styles.farmerName}>with {farmerName}</Text>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <Text style={[styles.cropName, { color: colors.text }]}>{cropName}</Text>
+        <Text style={[styles.farmerName, { color: colors.textSecondary }]}>with {farmerName}</Text>
       </View>
 
       {/* Messages */}
@@ -172,19 +185,25 @@ export default function NegotiationScreen({ navigation, route }) {
             key={idx}
             style={[
               styles.messageBubble,
-              msg.senderId === user.uid ? styles.myMessage : styles.theirMessage
+              msg.senderId === user.uid 
+                ? [styles.myMessage, { backgroundColor: colors.primary }] 
+                : [styles.theirMessage, { backgroundColor: colors.card, borderWidth: isDark ? 1 : 0, borderColor: colors.border }]
             ]}
           >
-            <Text style={styles.senderName}>{msg.senderName}</Text>
-            <Text style={styles.messageText}>{msg.text}</Text>
+            <Text style={[styles.senderName, { color: msg.senderId === user.uid ? '#eee' : colors.textSecondary }]}>
+              {msg.senderName}
+            </Text>
+            <Text style={[styles.messageText, { color: msg.senderId === user.uid ? '#fff' : colors.text }]}>
+              {msg.text}
+            </Text>
             {msg.offer && (
-              <View style={styles.offerContainer}>
-                <Text style={styles.offerText}>
+              <View style={[styles.offerContainer, { borderTopColor: msg.senderId === user.uid ? 'rgba(255,255,255,0.2)' : colors.border }]}>
+                <Text style={[styles.offerText, { color: msg.senderId === user.uid ? '#FFD54F' : '#FF9800' }]}>
                   Price: ₹{msg.offer.price}/kg | Quantity: {msg.offer.quantity}kg
                 </Text>
                 {msg.senderId !== user.uid && (
                   <TouchableOpacity 
-                    style={styles.acceptButton}
+                    style={[styles.acceptButton, { backgroundColor: colors.primary }]}
                     onPress={() => acceptOffer(msg.offer.price, msg.offer.quantity)}
                   >
                     <Text style={styles.acceptButtonText}>Accept Offer</Text>
@@ -192,7 +211,7 @@ export default function NegotiationScreen({ navigation, route }) {
                 )}
               </View>
             )}
-            <Text style={styles.timestamp}>
+            <Text style={[styles.timestamp, { color: msg.senderId === user.uid ? '#eee' : colors.textSecondary }]}>
               {new Date(msg.timestamp).toLocaleTimeString()}
             </Text>
           </View>
@@ -200,25 +219,27 @@ export default function NegotiationScreen({ navigation, route }) {
       </ScrollView>
 
       {/* Counter Offer Section */}
-      <View style={styles.counterSection}>
-        <Text style={styles.sectionTitle}>Send Counter Offer</Text>
+      <View style={[styles.counterSection, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Send Counter Offer</Text>
         <View style={styles.counterRow}>
           <TextInput
-            style={[styles.counterInput, { flex: 1 }]}
-            placeholder="Price (₹/kg)"
+            style={[styles.counterInput, { flex: 1, backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
+            placeholder="Price"
+            placeholderTextColor={colors.textSecondary}
             value={counterPrice}
             onChangeText={setCounterPrice}
             keyboardType="numeric"
           />
           <TextInput
-            style={[styles.counterInput, { flex: 1 }]}
-            placeholder="Quantity (kg)"
+            style={[styles.counterInput, { flex: 1, backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
+            placeholder="Qty"
+            placeholderTextColor={colors.textSecondary}
             value={counterQuantity}
             onChangeText={setCounterQuantity}
             keyboardType="numeric"
           />
           <TouchableOpacity 
-            style={styles.sendOfferButton}
+            style={[styles.sendOfferButton, { backgroundColor: '#FF9800' }]}
             onPress={sendCounterOffer}
             disabled={sending}
           >
@@ -228,16 +249,17 @@ export default function NegotiationScreen({ navigation, route }) {
       </View>
 
       {/* Message Input */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
           placeholder="Type a message..."
+          placeholderTextColor={colors.textSecondary}
           value={newMessage}
           onChangeText={setNewMessage}
           multiline
         />
         <TouchableOpacity 
-          style={styles.sendButton}
+          style={[styles.sendButton, { backgroundColor: colors.primary }]}
           onPress={sendMessage}
           disabled={sending}
         >

@@ -143,3 +143,28 @@ export const sendNegotiationMessage = async (negotiationId, message) => {
     return { success: false, error: error.message };
   }
 };
+
+export const getNegotiationList = async (userId, role) => {
+  const field = role === 'farmer' ? 'farmerId' : 'buyerId';
+  const q = query(
+    collection(db, 'negotiations'),
+    where(field, '==', userId)
+  );
+  const snapshot = await getDocs(q);
+  const negotiations = snapshot.docs.map(doc => ({ 
+    id: doc.id, 
+    ...doc.data() 
+  }));
+  
+  return negotiations.map(n => ({
+    userId: role === 'farmer' ? n.buyerId : n.farmerId,
+    userName: role === 'farmer' ? n.buyerName : n.farmerName,
+    lastMessage: n.messages && n.messages.length > 0 ? n.messages[n.messages.length - 1].text : `Negotiation for ${n.cropName}`,
+    lastMessageTime: n.messages && n.messages.length > 0 ? n.messages[n.messages.length - 1].timestamp : n.createdAt,
+    unreadCount: 0,
+    avatar: 'https://ui-avatars.com/api/?name=' + (role === 'farmer' ? n.buyerName : n.farmerName),
+    negotiationId: n.id,
+    cropName: n.cropName,
+    ...n
+  })).sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+};
