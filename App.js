@@ -32,11 +32,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <LanguageProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <LanguageProvider>
             <NavigationWrapper />
-          </AuthProvider>
-        </LanguageProvider>
+          </LanguageProvider>
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

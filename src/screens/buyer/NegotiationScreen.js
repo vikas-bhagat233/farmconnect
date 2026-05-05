@@ -203,10 +203,16 @@ export default function NegotiationScreen({ navigation, route }) {
                 </Text>
                 {msg.senderId !== user.uid && (
                   <TouchableOpacity 
-                    style={[styles.acceptButton, { backgroundColor: colors.primary }]}
+                    style={[
+                      styles.acceptButton, 
+                      { backgroundColor: negotiation?.status === 'locked' ? colors.border : colors.primary }
+                    ]}
                     onPress={() => acceptOffer(msg.offer.price, msg.offer.quantity)}
+                    disabled={negotiation?.status === 'locked'}
                   >
-                    <Text style={styles.acceptButtonText}>Accept Offer</Text>
+                    <Text style={[styles.acceptButtonText, negotiation?.status === 'locked' && { color: colors.textSecondary }]}>
+                      {negotiation?.status === 'locked' ? 'Negotiation Locked' : 'Accept Offer'}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -229,6 +235,7 @@ export default function NegotiationScreen({ navigation, route }) {
             value={counterPrice}
             onChangeText={setCounterPrice}
             keyboardType="numeric"
+            editable={negotiation?.status !== 'locked'}
           />
           <TextInput
             style={[styles.counterInput, { flex: 1, backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
@@ -237,11 +244,12 @@ export default function NegotiationScreen({ navigation, route }) {
             value={counterQuantity}
             onChangeText={setCounterQuantity}
             keyboardType="numeric"
+            editable={negotiation?.status !== 'locked'}
           />
           <TouchableOpacity 
-            style={[styles.sendOfferButton, { backgroundColor: '#FF9800' }]}
+            style={[styles.sendOfferButton, { backgroundColor: negotiation?.status === 'locked' ? colors.border : '#FF9800' }]}
             onPress={sendCounterOffer}
-            disabled={sending}
+            disabled={sending || negotiation?.status === 'locked'}
           >
             <Text style={styles.sendOfferButtonText}>Send</Text>
           </TouchableOpacity>
@@ -252,16 +260,17 @@ export default function NegotiationScreen({ navigation, route }) {
       <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <TextInput
           style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
-          placeholder="Type a message..."
+          placeholder={negotiation?.status === 'locked' ? "Negotiation locked" : "Type a message..."}
           placeholderTextColor={colors.textSecondary}
           value={newMessage}
           onChangeText={setNewMessage}
           multiline
+          editable={negotiation?.status !== 'locked'}
         />
         <TouchableOpacity 
-          style={[styles.sendButton, { backgroundColor: colors.primary }]}
+          style={[styles.sendButton, { backgroundColor: negotiation?.status === 'locked' ? colors.border : colors.primary }]}
           onPress={sendMessage}
-          disabled={sending}
+          disabled={sending || negotiation?.status === 'locked'}
         >
           <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>

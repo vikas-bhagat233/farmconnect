@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
+import { useAuth } from './AuthContext';
 
 const LanguageContext = createContext();
 
@@ -56,6 +57,19 @@ const translations = {
     terms: 'Terms & Conditions',
     privacy: 'Privacy Policy',
     contact: 'Contact Us',
+    earningsOverview: 'Earnings Overview',
+    spendingAnalysis: 'Spending Analysis',
+    quickActions: 'Quick Actions',
+    topPicks: 'Top Picks For You',
+    activeDeals: 'Active Deals',
+    totalInvested: 'Total Invested',
+    recentCrops: 'Recent Crops',
+    searchPlaceholder: 'Search for fresh crops...',
+    weatherForecast: 'Weather Forecast',
+    seeAll: 'See All',
+    market: 'Market',
+    invested: 'Invested',
+    earnings: 'Earnings',
   },
   hi: {
     welcome: 'स्वागत है',
@@ -106,6 +120,19 @@ const translations = {
     terms: 'नियम और शर्तें',
     privacy: 'गोपनीयता नीति',
     contact: 'संपर्क करें',
+    earningsOverview: 'कमाई का अवलोकन',
+    spendingAnalysis: 'खर्च का विश्लेषण',
+    quickActions: 'त्वरित कार्रवाई',
+    topPicks: 'आपके लिए बेहतरीन विकल्प',
+    activeDeals: 'सक्रिय सौदे',
+    totalInvested: 'कुल निवेश',
+    recentCrops: 'हाल की फसलें',
+    searchPlaceholder: 'ताजी फसलों की खोज करें...',
+    weatherForecast: 'मौसम का पूर्वानुमान',
+    seeAll: 'सभी देखें',
+    market: 'बाज़ार',
+    invested: 'निवेशित',
+    earnings: 'कमाई',
   },
   mr: {
     welcome: 'स्वागत आहे',
@@ -156,32 +183,58 @@ const translations = {
     terms: 'अटी आणि नियम',
     privacy: 'गोपनीयता धोरण',
     contact: 'संपर्क',
+    earningsOverview: 'उत्पन्नाचे विहंगावलोकन',
+    spendingAnalysis: 'खर्चाचे विश्लेषण',
+    quickActions: 'त्वरित कृती',
+    topPicks: 'तुमच्यासाठी सर्वोत्तम निवडी',
+    activeDeals: 'सक्रिय सौदे',
+    totalInvested: 'एकूण गुंतवणूक',
+    recentCrops: 'अलीकडील पिके',
+    searchPlaceholder: 'ताज्या पिकांचा शोध घ्या...',
+    weatherForecast: 'हवामान अंदाज',
+    seeAll: 'सर्व पहा',
+    market: 'बाजार',
+    invested: 'गुंतवणूक',
+    earnings: 'उत्पन्न',
   },
 };
 
 export const LanguageProvider = ({ children }) => {
+  const { user } = useAuth();
   const [language, setLanguage] = useState('en');
 
   useEffect(() => {
-    loadLanguage();
-  }, []);
+    loadLanguage(user?.uid);
+  }, [user]);
 
-  const loadLanguage = async () => {
-    const savedLanguage = await AsyncStorage.getItem('appLanguage');
+  const loadLanguage = async (userId = null) => {
+    const key = userId ? `appLanguage_${userId}` : 'appLanguage_guest';
+    const savedLanguage = await AsyncStorage.getItem(key);
     const deviceLanguage = Localization.locale.split('-')[0];
+    
     if (savedLanguage && translations[savedLanguage]) {
       setLanguage(savedLanguage);
+    } else if (!userId) {
+      // If guest, try global setting or device language
+      const globalLang = await AsyncStorage.getItem('appLanguage_global');
+      if (globalLang && translations[globalLang]) {
+        setLanguage(globalLang);
+      } else if (translations[deviceLanguage]) {
+        setLanguage(deviceLanguage);
+      }
     } else if (translations[deviceLanguage]) {
       setLanguage(deviceLanguage);
-    } else {
-      setLanguage('en');
     }
   };
 
-  const changeLanguage = async (lang) => {
+  const changeLanguage = async (lang, userId = currentUserId) => {
     if (translations[lang]) {
       setLanguage(lang);
-      await AsyncStorage.setItem('appLanguage', lang);
+      const key = userId ? `appLanguage_${userId}` : 'appLanguage_guest';
+      await AsyncStorage.setItem(key, lang);
+      if (!userId) {
+        await AsyncStorage.setItem('appLanguage_global', lang);
+      }
     }
   };
 
@@ -194,7 +247,9 @@ export const LanguageProvider = ({ children }) => {
       language,
       setLanguage: changeLanguage,
       t,
-      translations: translations[language]
+      translations: translations[language],
+      loadLanguage,
+      setCurrentUserId
     }}>
       {children}
     </LanguageContext.Provider>

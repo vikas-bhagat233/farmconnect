@@ -1,149 +1,88 @@
-import * as FileSystem from 'expo-file-system';
+import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 export const generateContractPDF = async (contract) => {
-  const htmlContent = `
-    <!DOCTYPE html>
+  const html = `
     <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Contract ${contract.id}</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 40px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .title { color: #4CAF50; font-size: 24px; }
-        .section { margin-bottom: 20px; }
-        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; }
-        .detail-row { margin-bottom: 8px; }
-        .label { font-weight: bold; width: 150px; display: inline-block; }
-        .signature { margin-top: 40px; }
-        .signature-line { width: 200px; border-top: 1px solid #000; margin-top: 30px; }
-        .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1 class="title">Agricultural Contract Agreement</h1>
-        <p>Contract ID: ${contract.id}</p>
-        <p>Date: ${new Date().toLocaleDateString()}</p>
-      </div>
-      
-      <div class="section">
-        <div class="section-title">Parties Involved</div>
-        <div class="detail-row">
-          <span class="label">Farmer:</span>
-          <span>${contract.farmerName}</span>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+        <style>
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+          .header { text-align: center; border-bottom: 2px solid #4CAF50; padding-bottom: 20px; margin-bottom: 30px; }
+          .title { font-size: 24px; font-weight: bold; color: #4CAF50; margin-bottom: 5px; }
+          .contract-id { font-size: 14px; color: #666; }
+          .section { margin-bottom: 25px; }
+          .section-title { font-size: 18px; font-weight: bold; border-left: 4px solid #4CAF50; padding-left: 10px; margin-bottom: 15px; }
+          .row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+          .label { font-weight: bold; color: #555; }
+          .value { color: #000; }
+          .footer { margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; font-size: 12px; color: #999; text-align: center; }
+          .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
+          .sig-box { width: 200px; border-top: 1px solid #333; text-align: center; padding-top: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">AGRICULTURAL SALES CONTRACT</div>
+          <div class="contract-id">ID: ${contract.id}</div>
+          <div class="date">Date: ${new Date(contract.createdAt).toLocaleDateString()}</div>
         </div>
-        <div class="detail-row">
-          <span class="label">Buyer:</span>
-          <span>${contract.buyerName}</span>
-        </div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title">Crop Details</div>
-        <div class="detail-row">
-          <span class="label">Crop Name:</span>
-          <span>${contract.cropName}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Quantity:</span>
-          <span>${contract.quantity} kg</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Agreed Price:</span>
-          <span>₹${contract.agreedPrice}/kg</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Total Amount:</span>
-          <span>₹${contract.totalAmount}</span>
-        </div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title">Payment Terms</div>
-        <div class="detail-row">
-          <span class="label">Advance (30%):</span>
-          <span>₹${contract.advanceAmount}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Remaining (70%):</span>
-          <span>₹${contract.remainingAmount}</span>
-        </div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title">Terms & Conditions</div>
-        <p>1. 30% advance payment within 7 days of contract acceptance.</p>
-        <p>2. Remaining 70% payment upon delivery of goods.</p>
-        <p>3. Quality inspection allowed before acceptance.</p>
-        <p>4. Contract cannot be cancelled after mutual agreement.</p>
-      </div>
-      
-      <div class="signature">
-        <div class="detail-row">
-          <div class="signature-line" style="float: left;">
-            <p>Farmer Signature</p>
-          </div>
-          <div class="signature-line" style="float: right;">
-            <p>Buyer Signature</p>
+
+        <div class="section">
+          <div class="section-title">Parties</div>
+          <div class="row">
+            <div class="sig-box">
+              <span class="label">Farmer (Seller):</span><br/>
+              <span class="value">${contract.farmerName}</span>
+            </div>
+            <div class="sig-box">
+              <span class="label">Buyer (Purchaser):</span><br/>
+              <span class="value">${contract.buyerName}</span>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div class="footer">
-        <p>This is a legally binding contract generated by Farmer Buyer Platform</p>
-      </div>
-    </body>
+
+        <div class="section">
+          <div class="section-title">Commodity Details</div>
+          <div class="row"><span class="label">Crop Name:</span><span class="value">${contract.cropName}</span></div>
+          <div class="row"><span class="label">Quantity:</span><span class="value">${contract.quantity} kg</span></div>
+          <div class="row"><span class="label">Agreed Price:</span><span class="value">₹${contract.agreedPrice}/kg</span></div>
+          <div class="row"><span class="label">Total Value:</span><span class="value" style="font-size: 18px; font-weight: bold;">₹${contract.totalAmount}</span></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Payment & Delivery</div>
+          <div class="row"><span class="label">Advance Payment:</span><span class="value">₹${contract.advanceAmount}</span></div>
+          <div class="row"><span class="label">Balance Payment:</span><span class="value">₹${contract.remainingAmount}</span></div>
+          <div class="row"><span class="label">Expected Delivery Date:</span><span class="value">${new Date(contract.deliveryDate).toLocaleDateString()}</span></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Terms & Conditions</div>
+          <p>1. The Seller agrees to provide quality ${contract.cropName} as per industry standards.</p>
+          <p>2. The Buyer agrees to pay the advance amount within 7 days of contract execution.</p>
+          <p>3. This contract is legally binding between ${contract.farmerName} and ${contract.buyerName}.</p>
+          <p>Notes: ${contract.notes || 'None'}</p>
+        </div>
+
+        <div class="signatures">
+          <div class="sig-box">Farmer's Signature</div>
+          <div class="sig-box">Buyer's Signature</div>
+        </div>
+
+        <div class="footer">
+          Generated by FarmConnect - Empowering Direct Trade
+        </div>
+      </body>
     </html>
   `;
-  
-  // Save HTML to file
-  const htmlPath = `${FileSystem.documentDirectory}contract_${contract.id}.html`;
-  await FileSystem.writeAsStringAsync(htmlPath, htmlContent);
-  
-  // For actual PDF generation, you would use a service like html2pdf
-  // For now, return the HTML path
-  return htmlPath;
-};
 
-export const downloadContractPDF = async (contract) => {
-  const pdfPath = await generateContractPDF(contract);
-  return pdfPath;
-};
-
-export const sharePDF = async (pdfPath) => {
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(pdfPath);
-    return true;
+  try {
+    const { uri } = await Print.printToFileAsync({ html });
+    await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+    return uri;
+  } catch (error) {
+    console.error('PDF Generation Error:', error);
+    return null;
   }
-  return false;
-};
-
-export const generateInvoicePDF = async (invoiceData) => {
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Invoice</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 40px; }
-        .header { text-align: center; }
-        .invoice-title { color: #4CAF50; font-size: 28px; }
-        .invoice-details { margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1 class="invoice-title">INVOICE</h1>
-        <p>Invoice #: INV-${Date.now()}</p>
-      </div>
-      <!-- More invoice details -->
-    </body>
-    </html>
-  `;
-  
-  const invoicePath = `${FileSystem.documentDirectory}invoice_${Date.now()}.html`;
-  await FileSystem.writeAsStringAsync(invoicePath, htmlContent);
-  return invoicePath;
 };

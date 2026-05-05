@@ -9,21 +9,32 @@ import {
   where, 
   orderBy, 
   updateDoc,
-  Timestamp
+  limit
 } from './firebase';
 import { sendNotification } from './notificationService';
 import { sendNegotiationMessage } from './messageService';
+import { generateContractPDF } from './pdfService';
+
+const generateRandomId = (prefix = 'CON') => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = prefix + '-';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
 
 export const createContract = async (contractData) => {
   try {
-    const contractRef = doc(collection(db, 'contracts'));
+    const contractId = generateRandomId();
+    const contractRef = doc(db, 'contracts', contractId);
     const totalAmount = contractData.totalAmount || (contractData.quantity * contractData.agreedPrice);
     const advanceAmount = contractData.advanceAmount !== undefined ? contractData.advanceAmount : (totalAmount * 0.3);
     const remainingAmount = contractData.remainingAmount !== undefined ? contractData.remainingAmount : (totalAmount - advanceAmount);
     
     const finalContractData = {
       ...contractData,
-      id: contractRef.id,
+      id: contractId,
       totalAmount,
       advanceAmount,
       remainingAmount,
@@ -36,14 +47,21 @@ export const createContract = async (contractData) => {
 
     await setDoc(contractRef, finalContractData);
     
-    // Update crop status to under contract
+    // Update crop status and quantity
     const cropRef = doc(db, 'crops', contractData.cropId);
-    await updateDoc(cropRef, { 
-      status: 'under_contract',
-      contractId: contractRef.id 
-    });
+    const cropSnap = await getDoc(cropRef);
+    if (cropSnap.exists()) {
+      const cropData = cropSnap.data();
+      const newQuantity = (cropData.quantity || 0) - contractData.quantity;
+      
+      await updateDoc(cropRef, { 
+        quantity: Math.max(0, newQuantity),
+        status: newQuantity <= 0 ? 'sold' : 'available',
+        contractId: contractRef.id 
+      });
+    }
 
-    // If there's a negotiation, add a system message
+    // If there's a negotiation, add a system message and lock it
     if (contractData.negotiationId) {
       await sendNegotiationMessage(contractData.negotiationId, {
         text: `📄 Contract Proposal Created: ₹${totalAmount} total (Advance: ₹${advanceAmount})`,
@@ -52,6 +70,13 @@ export const createContract = async (contractData) => {
         senderRole: 'buyer',
         timestamp: new Date().toISOString(),
         isSystem: true
+      });
+      
+      // Lock the negotiation
+      const negotiationRef = doc(db, 'negotiations', contractData.negotiationId);
+      await updateDoc(negotiationRef, { 
+        status: 'locked',
+        lockedAt: new Date().toISOString()
       });
     }
 

@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import { getContractById, updateContractStatus, downloadContractPDF } from '../../services/firestoreService';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function ContractDetailsScreen({ navigation, route }) {
   const { contractId } = route.params;
   const { user } = useAuth();
+  const { colors, isDark } = useTheme();
   const [contract, setContract] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -90,92 +92,89 @@ export default function ContractDetailsScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.contractId}>Contract #{contract.id.slice(-8)}</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <Text style={[styles.contractId, { color: colors.textSecondary }]}>Contract #{contract.id.slice(-8)}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor() }]}>
           <Text style={styles.statusText}>{contract?.status?.toUpperCase()}</Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Contract Details</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Contract Details</Text>
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Crop:</Text>
-          <Text style={styles.value}>{contract?.cropName}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Crop:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{contract?.cropName}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Quantity:</Text>
-          <Text style={styles.value}>{contract?.quantity} kg</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{contract?.quantity} kg</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Agreed Price:</Text>
-          <Text style={styles.value}>₹{contract?.agreedPrice}/kg</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Agreed Price:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>₹{contract?.agreedPrice}/kg</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Total Amount:</Text>
-          <Text style={[styles.value, styles.totalAmount]}>₹{contract?.totalAmount}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Total Amount:</Text>
+          <Text style={[styles.value, styles.totalAmount, { color: colors.primary }]}>₹{contract?.totalAmount}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Advance (30%):</Text>
-          <Text style={styles.value}>₹{contract?.advanceAmount}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Advance:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>₹{contract?.advanceAmount}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Remaining (70%):</Text>
-          <Text style={styles.value}>₹{contract?.remainingAmount}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Remaining:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>₹{contract?.remainingAmount}</Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Parties</Text>
-        <View style={styles.partyCard}>
-          <Text style={styles.partyRole}>Farmer</Text>
-          <Text style={styles.partyName}>{contract?.farmerName}</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Parties</Text>
+        <View style={[styles.partyCard, { backgroundColor: isDark ? colors.background : '#f5f5f5' }]}>
+          <Text style={[styles.partyRole, { color: colors.textSecondary }]}>Farmer</Text>
+          <Text style={[styles.partyName, { color: colors.text }]}>{contract?.farmerName}</Text>
         </View>
-        <View style={styles.partyCard}>
-          <Text style={styles.partyRole}>Buyer</Text>
-          <Text style={styles.partyName}>{contract?.buyerName}</Text>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Delivery Details</Text>
-        <View style={styles.detailRow}>
-          <Text style={styles.label}>Delivery Date:</Text>
-          <Text style={styles.value}>{new Date(contract?.deliveryDate).toLocaleDateString()}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.label}>Delivery Location:</Text>
-          <Text style={styles.value}>{contract?.deliveryLocation || 'To be confirmed'}</Text>
+        <View style={[styles.partyCard, { backgroundColor: isDark ? colors.background : '#f5f5f5' }]}>
+          <Text style={[styles.partyRole, { color: colors.textSecondary }]}>Buyer</Text>
+          <Text style={[styles.partyName, { color: colors.text }]}>{contract?.buyerName}</Text>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Terms & Conditions</Text>
-        <Text style={styles.terms}>
-          1. 30% advance payment is required within 7 days of contract acceptance.
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Delivery Details</Text>
+        <View style={styles.detailRow}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Delivery Date:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{new Date(contract?.deliveryDate).toLocaleDateString()}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Location:</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{contract?.deliveryLocation || 'To be confirmed'}</Text>
+        </View>
+      </View>
+
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Terms & Conditions</Text>
+        <Text style={[styles.terms, { color: colors.textSecondary }]}>
+          1. {contract?.advanceAmount > 0 ? `Advance payment of ₹${contract.advanceAmount}` : 'No advance payment'} required within 7 days.
         </Text>
-        <Text style={styles.terms}>
-          2. Remaining 70% payment is due upon delivery of goods.
+        <Text style={[styles.terms, { color: colors.textSecondary }]}>
+          2. Remaining payment of ₹{contract?.remainingAmount} is due upon delivery.
         </Text>
-        <Text style={styles.terms}>
-          3. Quality inspection can be done before acceptance.
-        </Text>
-        <Text style={styles.terms}>
-          4. Contract cannot be cancelled after both parties agree.
+        <Text style={[styles.terms, { color: colors.textSecondary }]}>
+          3. Quality inspection can be done before final acceptance.
         </Text>
       </View>
 
       {contract?.status === 'pending' && user?.uid === contract?.farmerId && (
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.acceptButton} onPress={handleAccept} disabled={updating}>
+          <TouchableOpacity style={[styles.acceptButton, { backgroundColor: colors.primary }]} onPress={handleAccept} disabled={updating}>
             <Text style={styles.acceptButtonText}>Accept Contract</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.rejectButton} onPress={handleReject} disabled={updating}>
@@ -184,11 +183,25 @@ export default function ContractDetailsScreen({ navigation, route }) {
         </View>
       )}
 
+      {contract?.status === 'active' && !contract?.advancePaid && user?.uid === contract?.buyerId && (
+        <TouchableOpacity 
+          style={[styles.downloadButton, { backgroundColor: colors.primary, marginVertical: 20 }]} 
+          onPress={() => navigation.navigate('Payment', { 
+            contractId: contract.id,
+            amount: contract.advanceAmount,
+            type: 'advance'
+          })}
+        >
+          <Text style={styles.downloadButtonText}>💰 Pay Advance (₹{contract.advanceAmount})</Text>
+        </TouchableOpacity>
+      )}
+
       {(contract?.status === 'active' || contract?.status === 'completed') && (
-        <TouchableOpacity style={styles.downloadButton} onPress={handleDownload}>
+        <TouchableOpacity style={[styles.downloadButton, { backgroundColor: '#2196F3' }]} onPress={handleDownload}>
           <Text style={styles.downloadButtonText}>📄 Download Contract PDF</Text>
         </TouchableOpacity>
       )}
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }

@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { getUserProfile } from '../../services/firestoreService';
+import { getUserProfile, getFarmerStats, getBuyerStats } from '../../services/firestoreService';
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
@@ -36,11 +36,23 @@ export default function ProfileScreen({ navigation }) {
   const loadProfile = async () => {
     const profileData = await getUserProfile(user.uid);
     setProfile(profileData);
-    setStats({
-      contracts: profileData?.contracts || 0,
-      crops: profileData?.crops || 0,
-      rating: profileData?.rating || 0
-    });
+    
+    // Fetch live stats
+    let liveStats = { contracts: 0, crops: 0, rating: profileData?.rating || 4.8 };
+    if (profileData?.role === 'farmer') {
+      const farmerStats = await getFarmerStats(user.uid);
+      liveStats.contracts = farmerStats.activeContracts + farmerStats.completedContracts;
+      liveStats.crops = farmerStats.totalCrops;
+      liveStats.value = farmerStats.totalEarnings;
+      liveStats.valueLabel = 'Earnings';
+    } else {
+      const buyerStats = await getBuyerStats(user.uid);
+      liveStats.contracts = buyerStats.activeContracts + buyerStats.completedContracts;
+      liveStats.value = buyerStats.totalSpent;
+      liveStats.valueLabel = 'Invested';
+    }
+    
+    setStats(liveStats);
     setLoading(false);
   };
 
@@ -92,20 +104,25 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Stats */}
+      {/* Stats Section with Live Data */}
       <View style={styles.statsContainer}>
         <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-          <Text style={styles.statValue}>{stats.contracts}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('contracts') || 'Contracts'}</Text>
+          <Text style={[styles.statValue, { color: colors.primary }]}>{stats.contracts}</Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('contracts')}</Text>
         </View>
-        {profile?.role === 'farmer' && (
+        {profile?.role === 'farmer' ? (
           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-            <Text style={styles.statValue}>{stats.crops}</Text>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('crops') || 'Crops Listed'}</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{stats.crops}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('crops')}</Text>
+          </View>
+        ) : (
+          <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statValue, { color: '#4CAF50' }]}>₹{stats.value?.toLocaleString()}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{stats.valueLabel}</Text>
           </View>
         )}
         <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-          <Text style={styles.statValue}>{stats.rating}</Text>
+          <Text style={[styles.statValue, { color: '#FFC107' }]}>⭐ {stats.rating}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Rating</Text>
         </View>
       </View>

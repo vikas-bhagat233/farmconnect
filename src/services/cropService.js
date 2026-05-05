@@ -77,6 +77,10 @@ export const getMarketplaceCrops = async (filters = {}) => {
   
   const snapshot = await getDocs(cropsQuery);
   let crops = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Only show available crops with positive quantity
+  crops = crops.filter(c => c.quantity > 0);
+  
   crops.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   
   // Apply filters
