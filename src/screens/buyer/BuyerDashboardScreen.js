@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -22,9 +23,11 @@ export default function BuyerDashboardScreen({ navigation }) {
   });
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     const crops = await getMarketplaceCrops();
@@ -49,7 +52,13 @@ export default function BuyerDashboardScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.welcomeText}>Welcome, {user?.displayName || 'Buyer'}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-          <Image source={{ uri: user?.photoURL }} style={styles.profileImage} />
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
+          ) : (
+            <View style={[styles.profileImage, { backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' }]}>
+              <Text style={{ fontSize: 20, color: '#fff' }}>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 

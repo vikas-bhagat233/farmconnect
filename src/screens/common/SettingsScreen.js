@@ -53,24 +53,24 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('theme')}</Text>
         <View style={styles.settingItem}>
-          <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{t('darkMode')}</Text>
           <Switch
             value={theme === 'dark'}
             onValueChange={toggleTheme}
-            trackColor={{ false: '#ccc', true: '#4CAF50' }}
+            trackColor={{ false: '#ccc', true: colors.primary }}
           />
         </View>
       </View>
 
-      <View style={styles.section}>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('language')}</Text>
         {languages.map((lang) => (
           <TouchableOpacity
             key={lang.code}
-            style={[styles.languageItem, language === lang.code && styles.selectedLanguage]}
+            style={[styles.languageItem, { borderBottomColor: colors.border }, language === lang.code && styles.selectedLanguage]}
             onPress={() => handleLanguageChange(lang.code)}
           >
             <Text style={styles.languageFlag}>{lang.flag}</Text>
@@ -82,52 +82,52 @@ export default function SettingsScreen({ navigation }) {
         ))}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('notifications')}</Text>
         <View style={styles.settingItem}>
-          <Text style={styles.settingLabel}>Push Notifications</Text>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>Push Notifications</Text>
           <Switch
             value={notifications}
             onValueChange={setNotifications}
-            trackColor={{ false: '#ccc', true: '#4CAF50' }}
+            trackColor={{ false: '#ccc', true: colors.primary }}
           />
         </View>
         <View style={styles.settingItem}>
-          <Text style={styles.settingLabel}>Sound</Text>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>Sound</Text>
           <Switch
             value={soundEnabled}
             onValueChange={setSoundEnabled}
-            trackColor={{ false: '#ccc', true: '#4CAF50' }}
+            trackColor={{ false: '#ccc', true: colors.primary }}
           />
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Support</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={handleReportIssue}>
-          <Text style={styles.menuItemText}>Report an Issue</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('support')}</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleReportIssue}>
+          <Text style={[styles.menuItemText, { color: colors.text }]}>Report an Issue</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={handleClearCache}>
-          <Text style={styles.menuItemText}>Clear Cache</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleClearCache}>
+          <Text style={[styles.menuItemText, { color: colors.text }]}>Clear Cache</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Privacy Policy</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.menuItemText, { color: colors.text }]}>{t('privacy')}</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Terms & Conditions</Text>
+        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.menuItemText, { color: colors.text }]}>{t('terms')}</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('about')}</Text>
         <View style={styles.aboutItem}>
-          <Text style={styles.appName}>Farmer Buyer Contract</Text>
-          <Text style={styles.appVersion}>Version 1.0.0</Text>
-          <Text style={styles.copyright}>© 2024 All rights reserved</Text>
+          <Text style={[styles.appName, { color: colors.primary }]}>Farmer Buyer Contract</Text>
+          <Text style={[styles.appVersion, { color: colors.textSecondary }]}>{t('version')} 1.0.0</Text>
+          <Text style={[styles.copyright, { color: colors.textSecondary }]}>© 2024 All rights reserved</Text>
         </View>
       </View>
     </ScrollView>

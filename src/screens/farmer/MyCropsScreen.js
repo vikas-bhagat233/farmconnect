@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -17,9 +18,11 @@ export default function MyCropsScreen({ navigation }) {
   const [crops, setCrops] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadCrops();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadCrops();
+    }, [])
+  );
 
   const loadCrops = async () => {
     const cropList = await getFarmerCrops(user.uid);

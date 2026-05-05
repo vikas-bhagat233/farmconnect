@@ -74,7 +74,13 @@ export default function EditProfileScreen({ navigation }) {
     <ScrollView style={styles.container}>
       <View style={styles.imageContainer}>
         <TouchableOpacity onPress={pickImage}>
-          <Image source={{ uri: profileImage }} style={styles.profileImage} />
+          {profileImage ? (
+            <Image source={{ uri: profileImage }} style={styles.profileImage} />
+          ) : (
+            <View style={[styles.profileImage, { backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' }]}>
+              <Text style={{ fontSize: 40, color: '#fff' }}>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</Text>
+            </View>
+          )}
           <View style={styles.cameraIcon}>
             <Text style={styles.cameraIconText}>📷</Text>
           </View>

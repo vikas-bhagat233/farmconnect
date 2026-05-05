@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -22,9 +23,11 @@ export default function ProfileScreen({ navigation }) {
     rating: 0
   });
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [])
+  );
 
   const loadProfile = async () => {
     const profileData = await getUserProfile(user.uid);
@@ -67,7 +70,13 @@ export default function ProfileScreen({ navigation }) {
     <ScrollView style={styles.container}>
       {/* Profile Header */}
       <View style={styles.header}>
-        <Image source={{ uri: user?.photoURL }} style={styles.profileImage} />
+        {user?.photoURL ? (
+          <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
+        ) : (
+          <View style={[styles.profileImage, { backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center' }]}>
+            <Text style={{ fontSize: 40, color: '#fff' }}>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</Text>
+          </View>
+        )}
         <Text style={styles.name}>{user?.displayName || 'User'}</Text>
         <Text style={styles.email}>{user?.email}</Text>
         <Text style={styles.role}>{profile?.role === 'farmer' ? '👨‍🌾 Farmer' : '🛒 Buyer'}</Text>
