@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -25,6 +26,46 @@ export default function BuyerPaymentsScreen({ navigation }) {
     advancePaid: 0
   });
 
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!user?.uid) return;
+
+      setLoading(true);
+      const { db, collection, query, where, onSnapshot } = require('../../services/firebase');
+      const q = query(
+        collection(db, 'payments'),
+        where('buyerId', '==', user.uid)
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const paymentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const sortedData = paymentsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setPayments(sortedData);
+
+        let totalPaid = 0;
+        let pendingPayments = 0;
+        let advancePaid = 0;
+
+        sortedData.forEach(payment => {
+          if (payment.status === 'paid') {
+            totalPaid += payment.amount;
+            if (payment.type === 'advance') advancePaid += payment.amount;
+          } else if (payment.status === 'pending') {
+            pendingPayments += payment.amount;
+          }
+        });
+
+        setSummary({ totalPaid, pendingPayments, advancePaid });
+        setLoading(false);
+      }, (error) => {
+        console.error("Payments listener failed:", error);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    }, [user?.uid])
+  );
+
   if (!user) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -33,51 +74,16 @@ export default function BuyerPaymentsScreen({ navigation }) {
     );
   }
 
-  useEffect(() => {
-    if (!user?.uid) return;
-    
-    setLoading(true);
-    const { db, collection, query, where, onSnapshot } = require('../../services/firebase');
-    const q = query(
-      collection(db, 'payments'),
-      where('buyerId', '==', user.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const paymentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const sortedData = paymentsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setPayments(sortedData);
-      
-      let totalPaid = 0;
-      let pendingPayments = 0;
-      let advancePaid = 0;
-      
-      sortedData.forEach(payment => {
-        if (payment.status === 'paid') {
-          totalPaid += payment.amount;
-          if (payment.type === 'advance') advancePaid += payment.amount;
-        } else if (payment.status === 'pending') {
-          pendingPayments += payment.amount;
-        }
-      });
-      
-      setSummary({ totalPaid, pendingPayments, advancePaid });
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user.uid]);
-
   const loadPayments = async () => {
     if (!user?.uid) return;
     setLoading(true);
     const paymentsData = await getBuyerPayments(user.uid);
     setPayments(paymentsData);
-    
+
     let totalPaid = 0;
     let pendingPayments = 0;
     let advancePaid = 0;
-    
+
     paymentsData.forEach(payment => {
       if (payment.status === 'paid') {
         totalPaid += payment.amount;
@@ -86,7 +92,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
         pendingPayments += payment.amount;
       }
     });
-    
+
     setSummary({ totalPaid, pendingPayments, advancePaid });
     setLoading(false);
   };
@@ -103,7 +109,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'paid': return '#4CAF50';
       case 'pending': return '#f44336';
       case 'processing': return '#FFC107';
@@ -129,7 +135,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
       </View>
 
       {item.status === 'pending' && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.payButton}
           onPress={() => handlePayNow(item)}
         >

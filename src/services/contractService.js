@@ -13,7 +13,7 @@ import {
   addDoc
 } from './firebase';
 import { sendNotification } from './notificationService';
-import { sendNegotiationMessage } from './messageService';
+import { sendNegotiationMessage } from './firestoreService';
 import { generateContractPDF } from './pdfService';
 
 const generateRandomId = (prefix = 'CON') => {
@@ -31,7 +31,6 @@ export const createContract = async (contractData) => {
     const advanceAmount = contractData.advanceAmount !== undefined ? contractData.advanceAmount : (totalAmount * 0.3);
     const remainingAmount = contractData.remainingAmount !== undefined ? contractData.remainingAmount : (totalAmount - advanceAmount);
 
-    console.log("DEBUG: Saving contract. BuyerID:", contractData.buyerId, "FarmerID:", contractData.farmerId);
     // Use addDoc to let Firestore generate the ID, which is safer for security rules
     const contractRef = await addDoc(collection(db, 'contracts'), {
       ...contractData,

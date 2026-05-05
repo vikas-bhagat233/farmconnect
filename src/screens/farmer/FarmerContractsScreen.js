@@ -22,21 +22,13 @@ export default function FarmerContractsScreen({ navigation }) {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
-
   const [refreshing, setRefreshing] = useState(false);
-  
-  if (!user) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
 
+  // useFocusEffect must be called unconditionally (no early return before hooks)
   useFocusEffect(
     useCallback(() => {
       if (!user?.uid) return;
-      
+
       setLoading(true);
       const { db, collection, query, where, onSnapshot } = require('../../services/firebase');
       const q = query(
@@ -55,8 +47,16 @@ export default function FarmerContractsScreen({ navigation }) {
       });
 
       return () => unsubscribe();
-    }, [user.uid])
+    }, [user?.uid])
   );
+
+  if (!user) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   const loadContracts = async () => {
     if (!user?.uid) return;
@@ -74,21 +74,27 @@ export default function FarmerContractsScreen({ navigation }) {
   };
 
   const handleContractAction = async (contractId, action) => {
+    const isAccepting = action === 'active';
     Alert.alert(
-      'Confirm Action',
-      `Do you want to ${action} this contract?`,
+      isAccepting ? 'Accept Contract' : 'Reject Contract',
+      isAccepting
+        ? 'Do you want to accept this contract? The buyer will be notified to pay the advance.'
+        : 'Are you sure you want to reject this contract?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Confirm',
+          text: isAccepting ? 'Accept' : 'Reject',
+          style: isAccepting ? 'default' : 'destructive',
           onPress: async () => {
             const result = await updateContractStatus(contractId, action);
-             if (result.success) {
-              Alert.alert('Success', `Contract ${action === 'active' ? 'accepted' : 'rejected'} successfully!${action === 'active' ? ' The buyer has been notified to pay the advance.' : ''}`);
-              await loadContracts();
-              if (action === 'active') {
-                setActiveTab('active');
-              }
+            if (result.success) {
+              Alert.alert(
+                'Success',
+                isAccepting
+                  ? 'Contract accepted! The buyer has been notified to pay the advance.'
+                  : 'Contract rejected.'
+              );
+              if (isAccepting) setActiveTab('active');
             } else {
               Alert.alert('Error', result.error || 'Failed to update contract');
             }
@@ -99,7 +105,7 @@ export default function FarmerContractsScreen({ navigation }) {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'pending': return '#FFC107';
       case 'active': return '#4CAF50';
       case 'completed': return '#2196F3';
@@ -116,7 +122,7 @@ export default function FarmerContractsScreen({ navigation }) {
   });
 
   const renderContract = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.contractCard, { backgroundColor: colors.card }]}
       onPress={() => navigation.navigate('ContractDetails', { contractId: item.id })}
     >
@@ -137,13 +143,13 @@ export default function FarmerContractsScreen({ navigation }) {
 
       {item.status === 'pending' && (
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.acceptButton]}
             onPress={() => handleContractAction(item.id, 'active')}
           >
             <Text style={styles.actionButtonText}>✓ Accept</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.rejectButton]}
             onPress={() => handleContractAction(item.id, 'rejected')}
           >
@@ -152,7 +158,7 @@ export default function FarmerContractsScreen({ navigation }) {
         </View>
       )}
 
-      {item.status === 'active' && (
+      {(item.status === 'active' || item.status === 'accept') && (
         <View style={[styles.paymentInfo, { borderTopColor: colors.border }]}>
           {!item.advancePaid ? (
             <Text style={{ color: '#FF9800', fontWeight: 'bold', fontSize: 13 }}>
@@ -184,28 +190,28 @@ export default function FarmerContractsScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.tabContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'pending' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('pending')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'pending' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Pending
+            Pending {contracts.filter(c => c.status === 'pending').length > 0 ? `(${contracts.filter(c => c.status === 'pending').length})` : ''}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'active' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('active')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'active' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Active
+            Active {contracts.filter(c => c.status === 'active' || c.status === 'accept').length > 0 ? `(${contracts.filter(c => c.status === 'active' || c.status === 'accept').length})` : ''}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'completed' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('completed')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'completed' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Completed
+            Completed {contracts.filter(c => c.status === 'completed').length > 0 ? `(${contracts.filter(c => c.status === 'completed').length})` : ''}
           </Text>
         </TouchableOpacity>
       </View>

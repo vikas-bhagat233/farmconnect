@@ -45,9 +45,15 @@ service cloud.firestore {
         resource.data.buyerId == request.auth.uid || 
         resource.data.farmerId == request.auth.uid
       );
-      allow write: if isAuthenticated() && (
+      // Allow create only if the user is one of the parties
+      allow create: if isAuthenticated() && (
         request.resource.data.buyerId == request.auth.uid || 
         request.resource.data.farmerId == request.auth.uid
+      );
+      // Allow update if the user is one of the parties (check existing doc)
+      allow update: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid || 
+        resource.data.farmerId == request.auth.uid
       );
     }
 

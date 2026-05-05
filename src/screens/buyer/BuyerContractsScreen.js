@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -22,22 +22,15 @@ export default function BuyerContractsScreen({ navigation }) {
   const { t } = useLanguage();
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('active');
-
+  // Default to 'pending' so buyer sees new contracts right away
+  const [activeTab, setActiveTab] = useState('pending');
   const [refreshing, setRefreshing] = useState(false);
-  
-  if (!user) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
 
+  // useFocusEffect must be called unconditionally (no early return before hooks)
   useFocusEffect(
     React.useCallback(() => {
       if (!user?.uid) return;
-      
+
       setLoading(true);
       const { db, collection, query, where, onSnapshot } = require('../../services/firebase');
       const contractsQuery = query(
@@ -56,8 +49,16 @@ export default function BuyerContractsScreen({ navigation }) {
       });
 
       return () => unsubscribe();
-    }, [user.uid])
+    }, [user?.uid])
   );
+
+  if (!user) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   const loadContracts = async () => {
     if (!user?.uid) return;
@@ -93,22 +94,25 @@ export default function BuyerContractsScreen({ navigation }) {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'pending': return '#FFC107';
-      case 'active': return '#4CAF50';
+      case 'active':
+      case 'accept': return '#4CAF50';
       case 'completed': return '#2196F3';
-      case 'cancelled': return '#f44336';
+      case 'cancelled':
+      case 'rejected': return '#f44336';
       default: return '#999';
     }
   };
 
   const getStatusText = (status) => {
-    switch(status) {
+    switch (status) {
       case 'pending': return 'Pending Farmer Approval';
-      case 'active': return 'Active';
+      case 'active':
       case 'accept': return 'Active';
       case 'completed': return 'Completed';
       case 'cancelled': return 'Cancelled';
+      case 'rejected': return 'Rejected';
       default: return status;
     }
   };
@@ -121,7 +125,7 @@ export default function BuyerContractsScreen({ navigation }) {
   });
 
   const renderContract = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.contractCard, { backgroundColor: colors.card }]}
       onPress={() => navigation.navigate('ContractDetails', { contractId: item.id })}
     >
@@ -140,14 +144,14 @@ export default function BuyerContractsScreen({ navigation }) {
         <Text style={[styles.date, { color: colors.textSecondary }]}>📅 Created: {new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
 
-      {item.status === 'active' && (
+      {(item.status === 'active' || item.status === 'accept') && (
         <View style={styles.paymentInfo}>
           {!item.advancePaid ? (
             <View style={styles.paymentActionContainer}>
               <Text style={[styles.paymentText, { color: '#FF9800' }]}>
                 ⚠️ Advance Payment Required: ₹{item.advanceAmount}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.payButton, { backgroundColor: colors.primary }]}
                 onPress={() => handleMakePayment(item)}
               >
@@ -169,8 +173,8 @@ export default function BuyerContractsScreen({ navigation }) {
         </View>
       )}
 
-      {(item.status === 'active' || item.status === 'completed') && (
-        <TouchableOpacity 
+      {(item.status === 'active' || item.status === 'accept' || item.status === 'completed') && (
+        <TouchableOpacity
           style={styles.downloadButton}
           onPress={() => handleDownloadPDF(item)}
         >
@@ -191,28 +195,28 @@ export default function BuyerContractsScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.tabContainer, { backgroundColor: colors.card }]}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'pending' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('pending')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'pending' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Pending
+            Pending {contracts.filter(c => c.status === 'pending').length > 0 ? `(${contracts.filter(c => c.status === 'pending').length})` : ''}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'active' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('active')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'active' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Active
+            Active {contracts.filter(c => c.status === 'active' || c.status === 'accept').length > 0 ? `(${contracts.filter(c => c.status === 'active' || c.status === 'accept').length})` : ''}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'completed' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('completed')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'completed' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Completed
+            Completed {contracts.filter(c => c.status === 'completed').length > 0 ? `(${contracts.filter(c => c.status === 'completed').length})` : ''}
           </Text>
         </TouchableOpacity>
       </View>
