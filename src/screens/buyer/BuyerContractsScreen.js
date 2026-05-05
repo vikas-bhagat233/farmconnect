@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -7,7 +8,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Share
+  Share,
+  RefreshControl
 } from 'react-native';
 import { getBuyerContracts, updateContractStatus, downloadContractPDF } from '../../services/contractService';
 import { useAuth } from '../../context/AuthContext';
@@ -22,15 +24,26 @@ export default function BuyerContractsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
 
-  useEffect(() => {
-    loadContracts();
-  }, []);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadContracts();
+    }, [])
+  );
 
   const loadContracts = async () => {
     setLoading(true);
     const contractsData = await getBuyerContracts(user.uid);
     setContracts(contractsData);
     setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    const contractsData = await getBuyerContracts(user.uid);
+    setContracts(contractsData);
+    setRefreshing(false);
   };
 
   const handleDownloadPDF = async (contract) => {
@@ -171,6 +184,9 @@ export default function BuyerContractsScreen({ navigation }) {
         data={filteredContracts}
         renderItem={renderContract}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No {activeTab} contracts found</Text>

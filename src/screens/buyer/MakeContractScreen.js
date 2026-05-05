@@ -33,15 +33,16 @@ export default function MakeContractScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   const [crop, setCrop] = useState(null);
   const [farmer, setFarmer] = useState(null);
-  
   const [deliveryDate, setDeliveryDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [advanceAmount, setAdvanceAmount] = useState('');
   const [notes, setNotes] = useState('');
 
   const totalAmount = agreedPrice * agreedQuantity;
+  const initialAdvance = Math.round(totalAmount * 0.3);
 
   useEffect(() => {
     loadData();
+    setAdvanceAmount(initialAdvance.toString());
   }, []);
 
   const loadData = async () => {
@@ -96,12 +97,27 @@ export default function MakeContractScreen({ navigation, route }) {
         createdAt: new Date().toISOString()
       };
 
-      await createContract(contractData);
-      Alert.alert('Success', 'Contract sent to farmer for approval!', [
-        { text: 'OK', onPress: () => navigation.navigate('Main', { screen: 'Contracts' }) }
-      ]);
+      const result = await createContract(contractData);
+      
+      if (result.success) {
+        Alert.alert(
+          'Contract Created', 
+          'Your contract proposal has been sent to the farmer and a negotiation record has been updated.', 
+          [
+            { 
+              text: 'OK', 
+              onPress: () => navigation.reset({
+                index: 0,
+                routes: [{ name: 'Main', params: { screen: 'Contracts' } }],
+              }) 
+            }
+          ]
+        );
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to create contract');
+      Alert.alert('Error', 'Failed to create contract: ' + error.message);
     }
     setSubmitting(false);
   };
@@ -121,12 +137,12 @@ export default function MakeContractScreen({ navigation, route }) {
         
         <View style={styles.summaryItem}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Crop</Text>
-          <Text style={[styles.value, { color: colors.text }]}>{crop.name}</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{crop?.name || 'Loading...'}</Text>
         </View>
         
         <View style={styles.summaryItem}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>Farmer</Text>
-          <Text style={[styles.value, { color: colors.text }]}>{farmer.name}</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{farmer?.name || 'Loading...'}</Text>
         </View>
         
         <View style={styles.divider} />
@@ -159,7 +175,7 @@ export default function MakeContractScreen({ navigation, route }) {
           onChangeText={setDeliveryDate}
         />
 
-        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Advance Payment (₹)</Text>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Advance Payment (30% Auto-calculated)</Text>
         <TextInput
           style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
           placeholder="Enter amount to pay now"

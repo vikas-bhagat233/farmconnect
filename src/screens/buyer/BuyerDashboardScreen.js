@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   ImageBackground,
-  Dimensions
+  Dimensions,
+  TextInput,
+  Image
 } from 'react-native';
 import { getMarketplaceCrops } from '../../services/cropService';
 import { getBuyerStats } from '../../services/firestoreService';
@@ -17,7 +19,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import ChatbotModal from '../../components/chatbot/ChatbotModal';
 import { BarChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
+
 
 const screenWidth = Dimensions.get('window').width;
 

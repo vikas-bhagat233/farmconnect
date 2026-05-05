@@ -227,7 +227,7 @@ export const LanguageProvider = ({ children }) => {
     }
   };
 
-  const changeLanguage = async (lang, userId = currentUserId) => {
+  const changeLanguage = async (lang, userId = user?.uid) => {
     if (translations[lang]) {
       setLanguage(lang);
       const key = userId ? `appLanguage_${userId}` : 'appLanguage_guest';
@@ -248,8 +248,7 @@ export const LanguageProvider = ({ children }) => {
       setLanguage: changeLanguage,
       t,
       translations: translations[language],
-      loadLanguage,
-      setCurrentUserId
+      loadLanguage
     }}>
       {children}
     </LanguageContext.Provider>

@@ -70,7 +70,7 @@ export default function ChatList({
     <FlatList
       data={chats}
       renderItem={renderChat}
-      keyExtractor={(item) => item.userId}
+      keyExtractor={(item) => item.id}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>💬</Text>

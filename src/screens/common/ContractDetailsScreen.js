@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   Share
 } from 'react-native';
-import { getContractById, updateContractStatus, downloadContractPDF } from '../../services/firestoreService';
+import { getContractById, updateContractStatus, downloadContractPDF } from '../../services/contractService';
+import { getFarmerById } from '../../services/firestoreService';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 

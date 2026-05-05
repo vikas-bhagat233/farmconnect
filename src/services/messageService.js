@@ -3,6 +3,7 @@ import {
   collection, 
   doc, 
   setDoc, 
+  getDoc,
   getDocs, 
   query, 
   where, 
@@ -145,6 +146,7 @@ export const sendNegotiationMessage = async (negotiationId, message) => {
 };
 
 export const getNegotiationList = async (userId, role) => {
+  if (!userId) return [];
   const field = role === 'farmer' ? 'farmerId' : 'buyerId';
   const q = query(
     collection(db, 'negotiations'),

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -6,7 +7,8 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { getFarmerContracts, updateContractStatus } from '../../services/contractService';
 import { useAuth } from '../../context/AuthContext';
@@ -21,15 +23,26 @@ export default function FarmerContractsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
 
-  useEffect(() => {
-    loadContracts();
-  }, []);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadContracts();
+    }, [])
+  );
 
   const loadContracts = async () => {
     setLoading(true);
     const contractsData = await getFarmerContracts(user.uid);
     setContracts(contractsData);
     setLoading(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    const contractsData = await getFarmerContracts(user.uid);
+    setContracts(contractsData);
+    setRefreshing(false);
   };
 
   const handleContractAction = async (contractId, action) => {
@@ -157,6 +170,9 @@ export default function FarmerContractsScreen({ navigation }) {
         data={filteredContracts}
         renderItem={renderContract}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No {activeTab} contracts found</Text>
