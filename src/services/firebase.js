@@ -10,7 +10,8 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   updateProfile,
-  signOut
+  signOut,
+  getAuth
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -28,7 +29,8 @@ import {
   arrayUnion,
   arrayRemove,
   Timestamp,
-  limit
+  limit,
+  addDoc
 } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -42,9 +44,16 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
-});
+
+let auth;
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+} catch (e) {
+  auth = getAuth(app);
+}
+
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
@@ -75,5 +84,6 @@ export {
   arrayUnion,
   arrayRemove,
   Timestamp,
-  limit
+  limit,
+  addDoc
 };

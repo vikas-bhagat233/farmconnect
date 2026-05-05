@@ -16,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 export default function ContractDetailsScreen({ navigation, route }) {
   const { contractId } = route.params;
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { colors, isDark } = useTheme();
   const [contract, setContract] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -184,7 +184,7 @@ export default function ContractDetailsScreen({ navigation, route }) {
         </View>
       )}
 
-      {contract?.status === 'active' && !contract?.advancePaid && user?.uid === contract?.buyerId && (
+      {contract?.status === 'active' && !contract?.advancePaid && userRole === 'buyer' && (
         <TouchableOpacity 
           style={[styles.downloadButton, { backgroundColor: colors.primary, marginVertical: 20 }]} 
           onPress={() => navigation.navigate('Payment', { 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -24,14 +24,42 @@ export default function FarmerContractsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('pending');
 
   const [refreshing, setRefreshing] = useState(false);
+  
+  if (!user) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   useFocusEffect(
-    React.useCallback(() => {
-      loadContracts();
-    }, [])
+    useCallback(() => {
+      if (!user?.uid) return;
+      
+      setLoading(true);
+      const { db, collection, query, where, onSnapshot } = require('../../services/firebase');
+      const q = query(
+        collection(db, 'contracts'),
+        where('farmerId', '==', user.uid)
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setContracts(sortedData);
+        setLoading(false);
+      }, (error) => {
+        console.error("Farmer contracts listener error:", error);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    }, [user.uid])
   );
 
   const loadContracts = async () => {
+    if (!user?.uid) return;
     setLoading(true);
     const contractsData = await getFarmerContracts(user.uid);
     setContracts(contractsData);
@@ -54,8 +82,16 @@ export default function FarmerContractsScreen({ navigation }) {
         {
           text: 'Confirm',
           onPress: async () => {
-            await updateContractStatus(contractId, action);
-            loadContracts();
+            const result = await updateContractStatus(contractId, action);
+             if (result.success) {
+              Alert.alert('Success', `Contract ${action === 'active' ? 'accepted' : 'rejected'} successfully!${action === 'active' ? ' The buyer has been notified to pay the advance.' : ''}`);
+              await loadContracts();
+              if (action === 'active') {
+                setActiveTab('active');
+              }
+            } else {
+              Alert.alert('Error', result.error || 'Failed to update contract');
+            }
           }
         }
       ]
@@ -74,7 +110,7 @@ export default function FarmerContractsScreen({ navigation }) {
 
   const filteredContracts = contracts.filter(c => {
     if (activeTab === 'pending') return c.status === 'pending';
-    if (activeTab === 'active') return c.status === 'active';
+    if (activeTab === 'active') return c.status === 'active' || c.status === 'accept';
     if (activeTab === 'completed') return c.status === 'completed';
     return true;
   });
@@ -103,13 +139,13 @@ export default function FarmerContractsScreen({ navigation }) {
         <View style={styles.actionButtons}>
           <TouchableOpacity 
             style={[styles.actionButton, styles.acceptButton]}
-            onPress={() => handleContractAction(item.id, 'accept')}
+            onPress={() => handleContractAction(item.id, 'active')}
           >
             <Text style={styles.actionButtonText}>✓ Accept</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.actionButton, styles.rejectButton]}
-            onPress={() => handleContractAction(item.id, 'reject')}
+            onPress={() => handleContractAction(item.id, 'rejected')}
           >
             <Text style={styles.actionButtonText}>✗ Reject</Text>
           </TouchableOpacity>
@@ -118,12 +154,20 @@ export default function FarmerContractsScreen({ navigation }) {
 
       {item.status === 'active' && (
         <View style={[styles.paymentInfo, { borderTopColor: colors.border }]}>
-          <Text style={[styles.paymentText, { color: colors.textSecondary }]}>
-            Advance Paid: ₹{item.advanceAmount} (30%)
-          </Text>
-          <Text style={[styles.paymentText, { color: colors.textSecondary }]}>
-            Remaining: ₹{item.remainingAmount} (70%)
-          </Text>
+          {!item.advancePaid ? (
+            <Text style={{ color: '#FF9800', fontWeight: 'bold', fontSize: 13 }}>
+              ⏳ Buyer Payment Pending: ₹{item.advanceAmount} (30% Advance)
+            </Text>
+          ) : (
+            <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 13 }}>
+              ✅ Advance Received! Prepare for delivery of {item.quantity}kg.
+            </Text>
+          )}
+          {item.advancePaid && (
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 5 }}>
+              Remaining: ₹{item.remainingAmount} (Due on delivery)
+            </Text>
+          )}
         </View>
       )}
     </TouchableOpacity>

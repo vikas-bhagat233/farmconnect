@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { getFarmerStats, getRecentCrops } from '../../services/firestoreService';
+import { getFarmerStats, getRecentCrops, subscribeToFarmerStats } from '../../services/firestoreService';
 import { getWeatherData } from '../../services/weatherService';
 import ChatbotModal from '../../components/chatbot/ChatbotModal';
 import { LineChart } from 'react-native-chart-kit';
@@ -40,13 +40,16 @@ export default function FarmerDashboardScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      if (!user?.uid) return;
       loadDashboardData();
+      const unsubscribe = subscribeToFarmerStats(user.uid, (newStats) => {
+        setStats(prev => ({ ...prev, ...newStats }));
+      });
+      return () => unsubscribe();
     }, [])
   );
 
   const loadDashboardData = async () => {
-    const statsData = await getFarmerStats(user.uid);
-    setStats(statsData);
     const crops = await getRecentCrops(user.uid);
     setRecentCrops(crops);
     setFilteredCrops(crops);

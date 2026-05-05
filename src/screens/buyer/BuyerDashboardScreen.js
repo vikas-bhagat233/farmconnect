@@ -12,8 +12,8 @@ import {
   TextInput,
   Image
 } from 'react-native';
-import { getMarketplaceCrops } from '../../services/cropService';
-import { getBuyerStats } from '../../services/firestoreService';
+import { getMarketplaceCrops, getFeaturedCrops } from '../../services/cropService';
+import { getBuyerStats, subscribeToBuyerStats } from '../../services/firestoreService';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -40,16 +40,20 @@ export default function BuyerDashboardScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      if (!user?.uid) return;
       loadData();
+      const unsubscribe = subscribeToBuyerStats(user.uid, (newStats) => {
+        setStats(newStats);
+      });
+      return () => unsubscribe();
     }, [])
   );
 
   const loadData = async () => {
+    if (!user?.uid) return;
     const crops = await getMarketplaceCrops();
     setFeaturedCrops(crops.slice(0, 5));
     setFilteredCrops(crops.slice(0, 5));
-    const buyerStats = await getBuyerStats(user.uid);
-    setStats(buyerStats);
   };
 
   const onRefresh = async () => {
@@ -134,6 +138,29 @@ export default function BuyerDashboardScreen({ navigation }) {
             <Text style={[styles.glassStatLabel, { color: colors.textSecondary }]}>{t('totalInvested')}</Text>
           </View>
         </View>
+
+        {/* Action Required Alert */}
+        {stats.pendingPayments?.length > 0 && (
+          <View style={styles.alertContainer}>
+            <View style={styles.alertBox}>
+              <Text style={styles.alertEmoji}>💳</Text>
+              <View style={styles.alertContent}>
+                <Text style={styles.alertTitle}>Action Required: {stats.pendingPayments.length} Payment(s)</Text>
+                <Text style={styles.alertMessage}>Please pay the 30% advance to finalize your contract for {stats.pendingPayments[0].cropName}.</Text>
+                <TouchableOpacity 
+                  style={styles.alertButton} 
+                  onPress={() => navigation.navigate('Payment', { 
+                    contractId: stats.pendingPayments[0].id,
+                    amount: stats.pendingPayments[0].advanceAmount,
+                    type: 'advance'
+                  })}
+                >
+                  <Text style={styles.alertButtonText}>Pay Advance Now</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Quick Actions Grid */}
         <View style={styles.sectionHeader}>
@@ -485,5 +512,49 @@ const styles = StyleSheet.create({
   },
   chatbotFabText: {
     fontSize: 32,
+  },
+  alertContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  alertBox: {
+    backgroundColor: '#FFF3E0',
+    borderRadius: 20,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 5,
+    borderLeftColor: '#FF9800',
+    elevation: 3,
+  },
+  alertEmoji: {
+    fontSize: 24,
+    marginRight: 15,
+  },
+  alertContent: {
+    flex: 1,
+  },
+  alertTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#E65100',
+  },
+  alertMessage: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  alertButton: {
+    backgroundColor: '#FF9800',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  alertButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

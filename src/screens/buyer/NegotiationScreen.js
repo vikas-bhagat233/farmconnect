@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
-import { createNegotiation, sendNegotiationMessage, getNegotiation } from '../../services/firestoreService';
+import { createNegotiation, sendNegotiationMessage, getNegotiation, getNegotiationById } from '../../services/firestoreService';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { sendNotification } from '../../services/notificationService';
@@ -26,7 +26,8 @@ export default function NegotiationScreen({ navigation, route }) {
     maxQuantity,
     proposedPrice,
     proposedQuantity,
-    buyerId: routeBuyerId 
+    buyerId: routeBuyerId,
+    negotiationId: routeNegotiationId
   } = route.params;
   
   const { user, userRole } = useAuth();
@@ -50,7 +51,12 @@ export default function NegotiationScreen({ navigation, route }) {
     const fId = userRole === 'farmer' ? user.uid : farmerId;
 
     // Check if negotiation exists
-    let negotiationData = await getNegotiation(cropId, bId, fId);
+    let negotiationData = null;
+    if (routeNegotiationId) {
+      negotiationData = await getNegotiationById(routeNegotiationId);
+    } else {
+      negotiationData = await getNegotiation(cropId, bId, fId);
+    }
     
     if (!negotiationData && userRole === 'buyer') {
       // Only buyers can initiate a new negotiation

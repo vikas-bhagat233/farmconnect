@@ -3,117 +3,77 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
+    // Helper function to check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    function isUser(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    function isFarmer() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'farmer';
-    }
-    
-    function isBuyer() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'buyer';
-    }
-    
-    function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    // Users collection
+
+    // --- Users Collection ---
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (isUser(userId) || isAdmin());
-      allow delete: if isAdmin();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
-    
-    // Crops collection
+
+    // --- Crops Collection ---
     match /crops/{cropId} {
+      // Anyone logged in can browse the marketplace
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isFarmer();
-      allow update: if isAuthenticated() && (resource.data.farmerId == request.auth.uid || isAdmin());
-      allow delete: if isAuthenticated() && (resource.data.farmerId == request.auth.uid || isAdmin());
+      // Only the farmer who owns the crop can create/edit/delete it
+      allow create: if isAuthenticated() && request.resource.data.farmerId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.farmerId == request.auth.uid;
     }
-    
-    // Contracts collection
+
+    // --- Contracts Collection ---
     match /contracts/{contractId} {
-      allow read: if isAuthenticated() && 
-        (resource.data.farmerId == request.auth.uid || 
-         resource.data.buyerId == request.auth.uid || 
-         isAdmin());
-      
-      allow create: if isAuthenticated() && 
-        request.resource.data.buyerId == request.auth.uid;
-      
-      allow update: if isAuthenticated() && 
-        ((resource.data.farmerId == request.auth.uid || 
-          resource.data.buyerId == request.auth.uid || 
-          isAdmin()) && 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'advancePaid', 'fullPaid', 'updatedAt']));
-      
-      allow delete: if isAdmin();
+      // Only the involved buyer or farmer can see the contract
+      allow read: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid || 
+        resource.data.farmerId == request.auth.uid
+      );
+      // Buyer creates contract, Farmer accepts (updates) it
+      allow create: if isAuthenticated() && request.resource.data.buyerId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid || 
+        resource.data.farmerId == request.auth.uid
+      );
     }
-    
-    // Messages collection
-    match /messages/{messageId} {
-      allow read: if isAuthenticated() && 
-        (resource.data.senderId == request.auth.uid || 
-         resource.data.receiverId == request.auth.uid);
-      
-      allow create: if isAuthenticated() && 
-        (request.resource.data.senderId == request.auth.uid);
-      
-      allow update: if isAuthenticated() && 
-        (resource.data.receiverId == request.auth.uid) && 
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-      
-      allow delete: if isAdmin();
+
+    // --- Negotiations Collection ---
+    match /negotiations/{negId} {
+      // Only the involved parties can see the negotiation
+      allow read: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid || 
+        resource.data.farmerId == request.auth.uid
+      );
+      allow write: if isAuthenticated() && (
+        request.resource.data.buyerId == request.auth.uid || 
+        request.resource.data.farmerId == request.auth.uid
+      );
     }
-    
-    // Notifications collection
-    match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-    
-    // Payments collection
+
+    // --- Payments Collection ---
     match /payments/{paymentId} {
-      allow read: if isAuthenticated() && 
-        (resource.data.buyerId == request.auth.uid || 
-         resource.data.farmerId == request.auth.uid || 
-         isAdmin());
-      
-      allow create: if isAuthenticated() && isBuyer() &&
-        request.resource.data.buyerId == request.auth.uid &&
-        request.resource.data.farmerId is string &&
-        request.resource.data.contractId is string &&
-        request.resource.data.type in ['advance', 'remaining'] &&
-        request.resource.data.amount is number &&
-        request.resource.data.amount > 0 &&
-        request.resource.data.status in ['pending', 'processing'];
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // Only the involved parties can see payments
+      allow read: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid || 
+        resource.data.farmerId == request.auth.uid
+      );
+      // Buyer or system creates payment
+      allow create: if isAuthenticated() && (
+        request.resource.data.buyerId == request.auth.uid
+      );
+      allow update: if isAuthenticated() && (
+        resource.data.buyerId == request.auth.uid
+      );
     }
-    
-    // Negotiations collection
-    match /negotiations/{negotiationId} {
-      allow read: if isAuthenticated() && 
-        (resource.data.buyerId == request.auth.uid || 
-         resource.data.farmerId == request.auth.uid);
-      
-      allow create: if isAuthenticated() && isBuyer();
-      allow update: if isAuthenticated() && 
-        (resource.data.buyerId == request.auth.uid || 
-         resource.data.farmerId == request.auth.uid);
-      
-      allow delete: if isAdmin();
+
+    // --- Messages Collection ---
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
     }
   }
 }

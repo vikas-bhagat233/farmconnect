@@ -89,7 +89,7 @@ export default function NotificationScreen({ navigation }) {
         </Text>
         <Text style={styles.notificationBody}>{item.body}</Text>
         <Text style={styles.notificationTime}>
-          {new Date(item.timestamp).toLocaleString()}
+          {new Date(item.createdAt || item.timestamp).toLocaleString()}
         </Text>
       </View>
       {!item.read && <View style={styles.unreadDot} />}

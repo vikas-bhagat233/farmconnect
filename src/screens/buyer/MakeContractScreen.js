@@ -80,11 +80,11 @@ export default function MakeContractScreen({ navigation, route }) {
     try {
       const contractData = {
         cropId,
-        cropName: crop.name,
+        cropName: crop.name || crop.cropName || 'Crop',
         farmerId,
-        farmerName: farmer.name,
+        farmerName: farmer.displayName || farmer.name || 'Farmer',
         buyerId: user.uid,
-        buyerName: user.displayName,
+        buyerName: user.displayName || 'Anonymous Buyer',
         agreedPrice,
         quantity: agreedQuantity,
         totalAmount,
@@ -93,7 +93,7 @@ export default function MakeContractScreen({ navigation, route }) {
         deliveryDate: new Date(deliveryDate).toISOString(),
         notes,
         negotiationId,
-        status: 'pending', // Pending farmer approval
+        status: 'pending', 
         createdAt: new Date().toISOString()
       };
 

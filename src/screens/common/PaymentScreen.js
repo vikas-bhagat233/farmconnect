@@ -95,6 +95,42 @@ export default function PaymentScreen({ navigation, route }) {
     }
   };
 
+  const handleSimulatedPayment = async () => {
+    setProcessing(true);
+    try {
+      // Simulate backend call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const { updateDoc, doc, db, getDoc } = require('../../services/firebase');
+      
+      // 1. Update Payment Record
+      const paymentRef = doc(db, 'payments', payment.id);
+      await updateDoc(paymentRef, { 
+        status: 'paid',
+        transactionId: 'SIM_' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        paidAt: new Date().toISOString()
+      });
+
+      // 2. Update Contract Record
+      const contractRef = doc(db, 'contracts', contractId);
+      if (type === 'advance') {
+        await updateDoc(contractRef, { advancePaid: true });
+      } else {
+        await updateDoc(contractRef, { fullPaid: true, status: 'completed' });
+      }
+
+      Alert.alert(
+        'Success (Simulated)',
+        `₹${payment.amount} paid successfully via simulation mode.`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (error) {
+      Alert.alert('Simulation Failed', error.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const getPaymentTypeText = () => {
     return type === 'advance' ? 'Advance Payment (30%)' : 'Remaining Payment (70%)';
   };
@@ -174,8 +210,16 @@ export default function PaymentScreen({ navigation, route }) {
         {processing ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.payButtonText}>Pay ₹{payment?.amount}</Text>
+          <Text style={styles.payButtonText}>Pay ₹{payment?.amount} (Razorpay)</Text>
         )}
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[styles.payButton, { backgroundColor: '#666', marginTop: 0 }]}
+        onPress={handleSimulatedPayment}
+        disabled={processing}
+      >
+        <Text style={styles.payButtonText}>Simulate Payment (No Backend)</Text>
       </TouchableOpacity>
     </ScrollView>
   );

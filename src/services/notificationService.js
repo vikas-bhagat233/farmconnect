@@ -45,23 +45,33 @@ export const sendNotification = async (userId, title, body, data = {}) => {
 };
 
 export const getNotifications = async (userId) => {
-  const notificationsQuery = query(
-    collection(db, 'notifications'),
-    where('userId', '==', userId)
-  );
-  const snapshot = await getDocs(notificationsQuery);
-  const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  try {
+    if (!userId) return [];
+    const notificationsQuery = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId)
+    );
+    const snapshot = await getDocs(notificationsQuery);
+    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } catch (error) {
+    return [];
+  }
 };
 
 export const getUnreadCount = async (userId) => {
-  const notificationsQuery = query(
-    collection(db, 'notifications'),
-    where('userId', '==', userId),
-    where('read', '==', false)
-  );
-  const snapshot = await getDocs(notificationsQuery);
-  return snapshot.size;
+  try {
+    if (!userId) return 0;
+    const notificationsQuery = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('read', '==', false)
+    );
+    const snapshot = await getDocs(notificationsQuery);
+    return snapshot.size;
+  } catch (error) {
+    return 0;
+  }
 };
 
 export const markNotificationAsRead = async (notificationId) => {

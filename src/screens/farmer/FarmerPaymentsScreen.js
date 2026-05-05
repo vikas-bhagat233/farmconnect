@@ -26,8 +26,39 @@ export default function FarmerPaymentsScreen({ navigation }) {
   });
 
   useEffect(() => {
-    loadPayments();
-  }, []);
+    if (!user?.uid) return;
+    
+    setLoading(true);
+    const { db, collection, query, where, onSnapshot } = require('../../services/firebase');
+    const q = query(
+      collection(db, 'payments'),
+      where('farmerId', '==', user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const paymentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const sortedData = paymentsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setPayments(sortedData);
+      
+      let totalEarned = 0;
+      let pendingAmount = 0;
+      let receivedAmount = 0;
+      
+      sortedData.forEach(payment => {
+        if (payment.status === 'received' || payment.status === 'paid' || payment.status === 'advance_paid') {
+          totalEarned += payment.amount;
+          receivedAmount += payment.amount;
+        } else if (payment.status === 'pending') {
+          pendingAmount += payment.amount;
+        }
+      });
+      
+      setSummary({ totalEarned, pendingAmount, receivedAmount });
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user.uid]);
 
   const loadPayments = async () => {
     setLoading(true);
@@ -41,7 +72,7 @@ export default function FarmerPaymentsScreen({ navigation }) {
     
     paymentsData.forEach(payment => {
       totalEarned += payment.amount;
-      if (payment.status === 'pending') {
+      if (payment.status === 'pending' || payment.status === 'accept') {
         pendingAmount += payment.amount;
       } else if (payment.status === 'received') {
         receivedAmount += payment.amount;

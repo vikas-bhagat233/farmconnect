@@ -96,6 +96,72 @@ export const getBuyerStats = async (buyerId) => {
   return { activeContracts, completedContracts, totalSpent };
 };
 
+export const subscribeToBuyerStats = (buyerId, callback) => {
+  console.log("DEBUG: Subscribing to buyer stats for UID:", buyerId);
+  const q = query(collection(db, 'contracts'), where('buyerId', '==', buyerId));
+  const { onSnapshot, getDocs } = require('./firebase');
+  
+  // Temporary Global Check
+  getDocs(collection(db, 'contracts')).then(snap => {
+    console.log("DEBUG: TOTAL contracts in DB (all users):", snap.size);
+    snap.forEach(d => console.log("DEBUG: Contract ID:", d.id, "Buyer:", d.data().buyerId));
+  }).catch(e => console.error("DEBUG: Global count error:", e));
+
+  return onSnapshot(q, (snapshot) => {
+    console.log("DEBUG: Buyer stats snapshot received. Match count for current user:", snapshot.size);
+    let activeContracts = 0;
+    let completedContracts = 0;
+    let totalSpent = 0;
+    
+    const pendingPayments = [];
+    snapshot.forEach(doc => {
+      const contract = { id: doc.id, ...doc.data() };
+      console.log("DEBUG: Processing Match:", doc.id, "Status:", contract.status, "BuyerID in Doc:", contract.buyerId);
+      if (contract.status === 'active' || contract.status === 'pending' || contract.status === 'accept') {
+        activeContracts++;
+        if ((contract.status === 'active' || contract.status === 'accept') && !contract.advancePaid) {
+          pendingPayments.push(contract);
+        }
+      }
+      if (contract.status === 'completed') {
+        completedContracts++;
+        totalSpent += contract.totalAmount;
+      }
+    });
+    
+    console.log("DEBUG: Final Stats for current user:", { activeContracts, completedContracts, totalSpent, pendingPaymentsCount: pendingPayments.length });
+    callback({ activeContracts, completedContracts, totalSpent, pendingPayments });
+  }, (error) => {
+    console.error("DEBUG: Buyer stats listener error:", error);
+  });
+};
+
+export const subscribeToFarmerStats = (farmerId, callback) => {
+  console.log("DEBUG: Subscribing to farmer stats for UID:", farmerId);
+  const q = query(collection(db, 'contracts'), where('farmerId', '==', farmerId));
+  const { onSnapshot } = require('./firebase');
+  
+  return onSnapshot(q, (snapshot) => {
+    console.log("DEBUG: Farmer stats snapshot received. Match count:", snapshot.size);
+    let activeContracts = 0;
+    let completedContracts = 0;
+    let totalEarnings = 0;
+    
+    snapshot.forEach(doc => {
+      const contract = { id: doc.id, ...doc.data() };
+      console.log("DEBUG: Farmer matching contract found:", doc.id, "Status:", contract.status, "FarmerID in Doc:", contract.farmerId);
+      if (contract.status === 'active' || contract.status === 'pending' || contract.status === 'accept') activeContracts++;
+      if (contract.status === 'completed') {
+        completedContracts++;
+        totalEarnings += contract.totalAmount;
+      }
+    });
+    
+    console.log("DEBUG: Final Stats for current farmer:", { activeContracts, completedContracts, totalEarnings });
+    callback({ activeContracts, completedContracts, totalEarnings });
+  });
+};
+
 export const getRecentCrops = async (farmerId, limitCount = 5) => {
   const cropsQuery = query(
     collection(db, 'crops'),
@@ -179,6 +245,15 @@ export const getNegotiation = async (cropId, buyerId, farmerId) => {
   const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
   return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+};
+
+export const getNegotiationById = async (id) => {
+  const docRef = doc(db, 'negotiations', id);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return { id: docSnap.id, ...docSnap.data() };
+  }
+  return null;
 };
 
 export const sendNegotiationMessage = async (negotiationId, message) => {

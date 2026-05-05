@@ -25,14 +25,42 @@ export default function BuyerContractsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('active');
 
   const [refreshing, setRefreshing] = useState(false);
+  
+  if (!user) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   useFocusEffect(
     React.useCallback(() => {
-      loadContracts();
-    }, [])
+      if (!user?.uid) return;
+      
+      setLoading(true);
+      const { db, collection, query, where, onSnapshot } = require('../../services/firebase');
+      const contractsQuery = query(
+        collection(db, 'contracts'),
+        where('buyerId', '==', user.uid)
+      );
+
+      const unsubscribe = onSnapshot(contractsQuery, (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setContracts(sortedData);
+        setLoading(false);
+      }, (error) => {
+        console.error("Contracts listener failed:", error);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    }, [user.uid])
   );
 
   const loadContracts = async () => {
+    if (!user?.uid) return;
     setLoading(true);
     const contractsData = await getBuyerContracts(user.uid);
     setContracts(contractsData);
@@ -78,6 +106,7 @@ export default function BuyerContractsScreen({ navigation }) {
     switch(status) {
       case 'pending': return 'Pending Farmer Approval';
       case 'active': return 'Active';
+      case 'accept': return 'Active';
       case 'completed': return 'Completed';
       case 'cancelled': return 'Cancelled';
       default: return status;
@@ -86,7 +115,7 @@ export default function BuyerContractsScreen({ navigation }) {
 
   const filteredContracts = contracts.filter(c => {
     if (activeTab === 'pending') return c.status === 'pending';
-    if (activeTab === 'active') return c.status === 'active';
+    if (activeTab === 'active') return c.status === 'active' || c.status === 'accept';
     if (activeTab === 'completed') return c.status === 'completed';
     return true;
   });
@@ -113,31 +142,39 @@ export default function BuyerContractsScreen({ navigation }) {
 
       {item.status === 'active' && (
         <View style={styles.paymentInfo}>
-          <Text style={styles.paymentText}>
-            Advance Paid: ₹{item.advanceAmount} (30%)
-          </Text>
-          {!item.advancePaid && (
-            <TouchableOpacity 
-              style={styles.payButton}
-              onPress={() => handleMakePayment(item)}
-            >
-              <Text style={styles.payButtonText}>Pay Advance (30%)</Text>
-            </TouchableOpacity>
-          )}
-          {item.advancePaid && !item.fullPaid && (
-            <Text style={styles.remainingText}>
-              Remaining: ₹{item.remainingAmount} (70% due on delivery)
-            </Text>
+          {!item.advancePaid ? (
+            <View style={styles.paymentActionContainer}>
+              <Text style={[styles.paymentText, { color: '#FF9800' }]}>
+                ⚠️ Advance Payment Required: ₹{item.advanceAmount}
+              </Text>
+              <TouchableOpacity 
+                style={[styles.payButton, { backgroundColor: colors.primary }]}
+                onPress={() => handleMakePayment(item)}
+              >
+                <Text style={styles.payButtonText}>💰 Pay Advance Now</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <Text style={[styles.paymentText, { color: '#4CAF50' }]}>
+                ✅ Advance Paid: ₹{item.advanceAmount} (30%)
+              </Text>
+              {!item.fullPaid && (
+                <Text style={styles.remainingText}>
+                  Remaining: ₹{item.remainingAmount} (70% due on delivery)
+                </Text>
+              )}
+            </View>
           )}
         </View>
       )}
 
-      {item.status === 'completed' && (
+      {(item.status === 'active' || item.status === 'completed') && (
         <TouchableOpacity 
           style={styles.downloadButton}
           onPress={() => handleDownloadPDF(item)}
         >
-          <Text style={styles.downloadButtonText}>📄 Download Contract</Text>
+          <Text style={styles.downloadButtonText}>📄 Download Contract PDF</Text>
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -155,19 +192,19 @@ export default function BuyerContractsScreen({ navigation }) {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.tabContainer, { backgroundColor: colors.card }]}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'active' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
-          onPress={() => setActiveTab('active')}
-        >
-          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'active' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Active
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
           style={[styles.tab, activeTab === 'pending' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('pending')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'pending' && { color: colors.primary, fontWeight: 'bold' }]}>
             Pending
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'active' && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
+          onPress={() => setActiveTab('active')}
+        >
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'active' && { color: colors.primary, fontWeight: 'bold' }]}>
+            Active
           </Text>
         </TouchableOpacity>
         <TouchableOpacity 

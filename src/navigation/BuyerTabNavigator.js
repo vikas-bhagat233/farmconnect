@@ -64,6 +64,7 @@ function ChatsScreen({ navigation }) {
 
   const handleChatPress = (chat) => {
     navigation.navigate('Negotiation', {
+      negotiationId: chat.id,
       cropId: chat.cropId,
       cropName: chat.cropName,
       farmerId: chat.farmerId,

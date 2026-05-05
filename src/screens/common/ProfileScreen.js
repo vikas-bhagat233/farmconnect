@@ -13,10 +13,10 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { getUserProfile, getFarmerStats, getBuyerStats } from '../../services/firestoreService';
+import { getUserProfile, getFarmerStats, getBuyerStats, subscribeToBuyerStats, subscribeToFarmerStats } from '../../services/firestoreService';
 
 export default function ProfileScreen({ navigation }) {
-  const { user, logout } = useAuth();
+  const { user, userRole, logout, saveUserRole } = useAuth();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const [profile, setProfile] = useState(null);
@@ -29,11 +29,32 @@ export default function ProfileScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
+      if (!user?.uid) return;
       loadProfile();
-    }, [])
+      let unsubscribe;
+      if (userRole === 'farmer') {
+        unsubscribe = subscribeToFarmerStats(user.uid, (newStats) => {
+          setStats(prev => ({ 
+            ...prev, 
+            contracts: newStats.activeContracts + newStats.completedContracts,
+            value: newStats.totalEarnings
+          }));
+        });
+      } else {
+        unsubscribe = subscribeToBuyerStats(user.uid, (newStats) => {
+          setStats(prev => ({ 
+            ...prev, 
+            contracts: newStats.activeContracts + newStats.completedContracts,
+            value: newStats.totalSpent
+          }));
+        });
+      }
+      return () => unsubscribe && unsubscribe();
+    }, [userRole])
   );
 
   const loadProfile = async () => {
+    if (!user?.uid) return;
     const profileData = await getUserProfile(user.uid);
     setProfile(profileData);
     
@@ -67,7 +88,7 @@ export default function ProfileScreen({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             await logout();
-            navigation.replace('Login');
+            // No need to navigate, AppNavigator handles user null state
           }
         }
       ]
@@ -165,6 +186,30 @@ export default function ProfileScreen({ navigation }) {
           onPress={() => navigation.navigate('Settings')}
         >
           <Text style={[styles.settingsButtonText, { color: colors.text }]}>⚙️ {t('settings') || 'Settings'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.settingsButton, { backgroundColor: '#FF9800' }]}
+          onPress={() => {
+            const newRole = profile?.role === 'farmer' ? 'buyer' : 'farmer';
+            Alert.alert(
+              'Switch Role',
+              `Are you sure you want to switch your account to ${newRole}?`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                  text: 'Switch', 
+                  onPress: async () => {
+                    await saveUserRole(newRole);
+                    Alert.alert('Role Switched', `Your account is now set to "${newRole}". The dashboard will update automatically.`);
+                    loadProfile();
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <Text style={[styles.settingsButtonText, { color: '#fff', fontWeight: 'bold' }]}>🔄 Switch to {profile?.role === 'farmer' ? 'Buyer' : 'Farmer'}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
