@@ -957,7 +957,7 @@ export const LanguageProvider = ({ children }) => {
   const loadLanguage = async (userId = null) => {
     const key = userId ? `appLanguage_${userId}` : 'appLanguage_guest';
     const savedLanguage = await AsyncStorage.getItem(key);
-    const deviceLanguage = Localization.locale.split('-')[0];
+    const deviceLanguage = Localization.locale ? Localization.locale.split('-')[0] : 'en';
     
     if (savedLanguage && translations[savedLanguage]) {
       setLanguage(savedLanguage);
@@ -986,7 +986,8 @@ export const LanguageProvider = ({ children }) => {
   };
 
   const t = (key) => {
-    return translations[language][key] || translations.en[key] || key;
+    const langDict = translations[language] || translations.en;
+    return langDict[key] || translations.en[key] || key;
   };
 
   return (
