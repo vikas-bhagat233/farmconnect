@@ -11,11 +11,15 @@ import {
 } from 'react-native';
 import { getFarmerById, getFarmerReviews } from '../../services/firestoreService';
 import { getFarmerCrops } from '../../services/cropService';
+
+import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
+
 
 export default function FarmerProfileScreen({ navigation, route }) {
   const { farmerId } = route.params;
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [farmer, setFarmer] = useState(null);
   const [crops, setCrops] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -29,13 +33,13 @@ export default function FarmerProfileScreen({ navigation, route }) {
     setLoading(true);
     const farmerData = await getFarmerById(farmerId);
     setFarmer(farmerData);
-    
+
     const farmerCrops = await getFarmerCrops(farmerId);
     setCrops(farmerCrops.slice(0, 5));
-    
+
     const farmerReviews = await getFarmerReviews(farmerId);
     setReviews(farmerReviews);
-    
+
     setLoading(false);
   };
 
@@ -62,7 +66,7 @@ export default function FarmerProfileScreen({ navigation, route }) {
   if (!farmer) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Farmer not found</Text>
+        <Text style={styles.errorText}>{t('noData') || 'Farmer not found'}</Text>
       </View>
     );
   }
@@ -73,21 +77,24 @@ export default function FarmerProfileScreen({ navigation, route }) {
       <View style={styles.header}>
         <Image source={{ uri: farmer.photoURL }} style={styles.profileImage} />
         <Text style={styles.farmerName}>{farmer.name}</Text>
-        <Text style={styles.farmerLocation}>📍 {farmer.location || 'India'}</Text>
+        <Text style={styles.farmerLocation}>📍 {farmer.location || t('noData') || 'India'}</Text>
+        {/* Farm Name and Size */}
+        <Text style={styles.farmerDetail}>{t('farmName') || 'Farm Name'}: {farmer.farmName || t('notProvided') || 'Not provided'}</Text>
+        <Text style={styles.farmerDetail}>{t('farmSize') || 'Farm Size'}: {farmer.farmSize || t('notProvided') || 'Not provided'}</Text>
         <View style={styles.ratingContainer}>
           <Text style={styles.rating}>⭐ {farmer.rating || 4.5}</Text>
-          <Text style={styles.reviewCount}>({reviews.length} reviews)</Text>
+          <Text style={styles.reviewCount}>({reviews.length} {t('reviews') || 'reviews'})</Text>
         </View>
         <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
-          <Text style={styles.chatButtonText}>💬 Send Message</Text>
+          <Text style={styles.chatButtonText}>💬 {t('sendMessage') || 'Send Message'}</Text>
         </TouchableOpacity>
       </View>
 
       {/* About Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About Farmer</Text>
+        <Text style={styles.sectionTitle}>{t('aboutFarmer') || 'About Farmer'}</Text>
         <Text style={styles.aboutText}>
-          {farmer.bio || 'Experienced farmer dedicated to providing high-quality organic produce.'}
+          {farmer.bio || t('defaultFarmerBio') || 'Experienced farmer dedicated to providing high-quality organic produce.'}
         </Text>
       </View>
 
@@ -95,29 +102,29 @@ export default function FarmerProfileScreen({ navigation, route }) {
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{farmer.totalSales || 0}</Text>
-          <Text style={styles.statLabel}>Total Sales</Text>
+          <Text style={styles.statLabel}>{t('totalSales') || 'Total Sales'}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{farmer.totalCrops || crops.length}</Text>
-          <Text style={styles.statLabel}>Crops Listed</Text>
+          <Text style={styles.statLabel}>{t('cropsListed') || 'Crops Listed'}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{farmer.completedContracts || 0}</Text>
-          <Text style={styles.statLabel}>Contracts</Text>
+          <Text style={styles.statLabel}>{t('contracts') || 'Contracts'}</Text>
         </View>
       </View>
 
       {/* Recent Crops */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Crops</Text>
+          <Text style={styles.sectionTitle}>{t('recentCrops') || 'Recent Crops'}</Text>
           <TouchableOpacity onPress={handleViewAllCrops}>
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={styles.viewAllText}>{t('seeAll') || 'View All'}</Text>
           </TouchableOpacity>
         </View>
         {crops.map((crop) => (
           <TouchableOpacity 
-            key={crop.id} 
+            key={crop.id}
             style={styles.cropCard}
             onPress={() => navigation.navigate('CropDetail', { cropId: crop.id })}
           >
@@ -125,7 +132,7 @@ export default function FarmerProfileScreen({ navigation, route }) {
             <View style={styles.cropInfo}>
               <Text style={styles.cropName}>{crop.name}</Text>
               <Text style={styles.cropPrice}>₹{crop.price}/kg</Text>
-              <Text style={styles.cropQuantity}>{crop.quantity} kg available</Text>
+              <Text style={styles.cropQuantity}>{crop.quantity} {t('quantity') || 'kg available'}</Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -133,7 +140,7 @@ export default function FarmerProfileScreen({ navigation, route }) {
 
       {/* Reviews Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Customer Reviews</Text>
+        <Text style={styles.sectionTitle}>{t('customerReviews') || 'Customer Reviews'}</Text>
         {reviews.length > 0 ? (
           reviews.map((review, idx) => (
             <View key={idx} style={styles.reviewCard}>
@@ -148,7 +155,7 @@ export default function FarmerProfileScreen({ navigation, route }) {
             </View>
           ))
         ) : (
-          <Text style={styles.noReviewsText}>No reviews yet</Text>
+          <Text style={styles.noReviewsText}>{t('noReviews') || 'No reviews yet'}</Text>
         )}
       </View>
     </ScrollView>
@@ -173,6 +180,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     color: 'red',
+  },
+  farmerDetail: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
   },
   header: {
     backgroundColor: '#fff',

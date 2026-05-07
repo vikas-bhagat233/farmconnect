@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
-import { AppState, Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { getNotifications, getUnreadCount, markNotificationAsRead } from '../services/notificationService';
+import { markNotificationAsRead } from '../services/notificationService';
 import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
@@ -21,79 +21,86 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const notificationListener = useRef();
-  const responseListener = useRef();
+  const unsubscribeRef = useRef(null);
+  const isFirstLoad = useRef(true);
 
   useEffect(() => {
-    if (user) {
-      loadNotifications();
-      registerForPushNotifications();
-      
-      const interval = setInterval(loadNotifications, 30000);
-      return () => clearInterval(interval);
+    if (!user?.uid) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setLoading(false);
+      return;
     }
-  }, [user]);
+
+    // Real-time listener — fires instantly when a new notification is written
+    const { db, collection, query, where, onSnapshot } = require('../services/firebase');
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', user.uid)
+    );
+
+    unsubscribeRef.current = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      const unread = data.filter(n => !n.read).length;
+
+      // On subsequent updates (not first load), show an in-app alert for new notifications
+      if (!isFirstLoad.current) {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const n = change.doc.data();
+            // Show local push so the buyer sees it immediately on their device
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: n.title,
+                body: n.body,
+                sound: true,
+              },
+              trigger: null,
+            }).catch(() => {});
+          }
+        });
+      }
+
+      isFirstLoad.current = false;
+      setNotifications(data);
+      setUnreadCount(unread);
+      setLoading(false);
+    }, (error) => {
+      console.error('Notification listener error:', error.code);
+      setLoading(false);
+    });
+
+    return () => {
+      if (unsubscribeRef.current) unsubscribeRef.current();
+      isFirstLoad.current = true;
+    };
+  }, [user?.uid]);
 
   useEffect(() => {
-    notificationListener.current = Notifications.addNotificationReceivedListener(handleNotification);
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
-    
-    return () => {
-      Notifications.removeNotificationSubscription(notificationListener.current);
-      Notifications.removeNotificationSubscription(responseListener.current);
-    };
+    // Request notification permissions on mount
+    (async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status === 'granted' && Platform.OS === 'android') {
+        Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+        });
+      }
+    })();
   }, []);
 
-  const registerForPushNotifications = async () => {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    
-    if (finalStatus !== 'granted') return;
-    
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log('Push token:', token);
-    
-    if (Platform.OS === 'android') {
-      Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-    }
-  };
-
   const loadNotifications = async () => {
-    if (!user) return;
-    const data = await getNotifications(user.uid);
-    setNotifications(data);
-    const count = await getUnreadCount(user.uid);
-    setUnreadCount(count);
-    setLoading(false);
-  };
-
-  const handleNotification = (notification) => {
-    loadNotifications();
-  };
-
-  const handleNotificationResponse = (response) => {
-    const { data } = response.notification.request.content;
-    // Navigation handled in AppNavigator
+    // No-op — data comes from the real-time listener above
+    // Kept for backward compatibility with any screen that calls it
   };
 
   const markAsRead = async (notificationId) => {
     await markNotificationAsRead(notificationId);
-    loadNotifications();
-  };
-
-  const addNotification = (notification) => {
-    setNotifications(prev => [notification, ...prev]);
-    setUnreadCount(prev => prev + 1);
+    // Listener will auto-update the list
   };
 
   return (
@@ -103,7 +110,6 @@ export const NotificationProvider = ({ children }) => {
       loading,
       loadNotifications,
       markAsRead,
-      addNotification
     }}>
       {children}
     </NotificationContext.Provider>

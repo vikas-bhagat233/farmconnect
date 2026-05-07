@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 import { getCropById, updateCropStatus } from '../../services/cropService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function CropDetailScreen({ navigation, route }) {
   const { cropId } = route.params;
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [crop, setCrop] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -34,11 +36,11 @@ export default function CropDetailScreen({ navigation, route }) {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out my ${crop.name} - ${crop.quantity}kg at ₹${crop.price}/kg`,
-        title: 'Crop Details'
+        message: `${t('shareMyCropPrefix') || 'Check out my'} ${crop.name} - ${crop.quantity}kg ${t('shareCropAt') || 'at'} ₹${crop.price}/kg`,
+        title: t('cropDetails') || 'Crop Details'
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to share');
+      Alert.alert(t('error') || 'Error', t('failedToShare') || 'Failed to share');
     }
   };
 
@@ -49,12 +51,12 @@ export default function CropDetailScreen({ navigation, route }) {
   const handleToggleStatus = async () => {
     const newStatus = crop.status === 'available' ? 'unavailable' : 'available';
     Alert.alert(
-      'Update Status',
-      `Do you want to mark this crop as ${newStatus}?`,
+      t('updateStatus') || 'Update Status',
+      `${t('markCropAs') || 'Do you want to mark this crop as'} ${newStatus}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel') || 'Cancel', style: 'cancel' },
         {
-          text: 'Yes',
+          text: t('yes') || 'Yes',
           onPress: async () => {
             await updateCropStatus(cropId, newStatus);
             loadCropDetails();
@@ -75,7 +77,7 @@ export default function CropDetailScreen({ navigation, route }) {
   if (!crop) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Crop not found</Text>
+        <Text style={styles.errorText}>{t('cropNotFound') || 'Crop not found'}</Text>
       </View>
     );
   }
@@ -106,42 +108,42 @@ export default function CropDetailScreen({ navigation, route }) {
       <View style={styles.infoContainer}>
         <Text style={styles.cropName}>{crop.name}</Text>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Price</Text>
+          <Text style={styles.priceLabel}>{t('price') || 'Price'}</Text>
           <Text style={styles.priceValue}>₹{crop.price}/kg</Text>
         </View>
 
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{crop.quantity}</Text>
-            <Text style={styles.statLabel}>Quantity (kg)</Text>
+            <Text style={styles.statLabel}>{t('quantityKg') || 'Quantity (kg)'}</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{crop.category}</Text>
-            <Text style={styles.statLabel}>Category</Text>
+            <Text style={styles.statLabel}>{t('category') || 'Category'}</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{crop.quality}</Text>
-            <Text style={styles.statLabel}>Quality Grade</Text>
+            <Text style={styles.statLabel}>{t('qualityGrade') || 'Quality Grade'}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
+          <Text style={styles.sectionTitle}>{t('description') || 'Description'}</Text>
           <Text style={styles.description}>
-            {crop.description || 'No description provided'}
+            {crop.description || (t('noDescription') || 'No description provided')}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
-          <Text style={styles.location}>{crop.location || 'Location not specified'}</Text>
+          <Text style={styles.sectionTitle}>{t('location') || 'Location'}</Text>
+          <Text style={styles.location}>{crop.location || (t('locationNotSpecified') || 'Location not specified')}</Text>
         </View>
 
         <View style={styles.statusContainer}>
-          <Text style={styles.statusLabel}>Status:</Text>
+          <Text style={styles.statusLabel}>{t('status') || 'Status'}:</Text>
           <View style={[styles.statusBadge, crop.status === 'available' ? styles.availableBadge : styles.unavailableBadge]}>
             <Text style={styles.statusText}>
-              {crop.status === 'available' ? 'Available' : 'Not Available'}
+              {crop.status === 'available' ? (t('available') || 'Available') : (t('notAvailable') || 'Not Available')}
             </Text>
           </View>
         </View>
@@ -149,11 +151,11 @@ export default function CropDetailScreen({ navigation, route }) {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-            <Text style={styles.editButtonText}>✏️ Edit Crop</Text>
+            <Text style={styles.editButtonText}>✏️ {t('editCrop') || 'Edit Crop'}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-            <Text style={styles.shareButtonText}>📤 Share</Text>
+            <Text style={styles.shareButtonText}>📤 {t('share') || 'Share'}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -161,7 +163,7 @@ export default function CropDetailScreen({ navigation, route }) {
             onPress={handleToggleStatus}
           >
             <Text style={styles.statusButtonText}>
-              {crop.status === 'available' ? '🔴 Make Unavailable' : '🟢 Make Available'}
+              {crop.status === 'available' ? (t('makeUnavailable') || 'Make Unavailable') : (t('makeAvailable') || 'Make Available')}
             </Text>
           </TouchableOpacity>
         </View>

@@ -8,6 +8,7 @@ LogBox.ignoreAllLogs();
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { NotificationProvider } from './src/context/NotificationContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 const NavigationWrapper = () => {
@@ -38,7 +39,9 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <LanguageProvider>
-            <NavigationWrapper />
+            <NotificationProvider>
+              <NavigationWrapper />
+            </NotificationProvider>
           </LanguageProvider>
         </AuthProvider>
       </ThemeProvider>

@@ -25,9 +25,20 @@ export default function FarmerPaymentsScreen({ navigation }) {
     receivedAmount: 0
   });
 
+  const formatDateSafe = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString();
+  };
+
+  // useEffect dependency must use optional chaining — user can be null on mount
   useEffect(() => {
-    if (!user?.uid) return;
-    
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const { db, collection, query, where, onSnapshot } = require('../../services/firebase');
     const q = query(
@@ -39,11 +50,11 @@ export default function FarmerPaymentsScreen({ navigation }) {
       const paymentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const sortedData = paymentsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setPayments(sortedData);
-      
+
       let totalEarned = 0;
       let pendingAmount = 0;
       let receivedAmount = 0;
-      
+
       sortedData.forEach(payment => {
         if (payment.status === 'received' || payment.status === 'paid' || payment.status === 'advance_paid') {
           totalEarned += payment.amount;
@@ -52,24 +63,35 @@ export default function FarmerPaymentsScreen({ navigation }) {
           pendingAmount += payment.amount;
         }
       });
-      
+
       setSummary({ totalEarned, pendingAmount, receivedAmount });
+      setLoading(false);
+    }, (error) => {
+      console.error('Farmer payments listener error:', error);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user.uid]);
+  }, [user?.uid]); // safe — won't crash when user is null
+
+  if (!user) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   const loadPayments = async () => {
+    if (!user?.uid) return;
     setLoading(true);
     const paymentsData = await getFarmerPayments(user.uid);
     setPayments(paymentsData);
-    
-    // Calculate summary
+
     let totalEarned = 0;
     let pendingAmount = 0;
     let receivedAmount = 0;
-    
+
     paymentsData.forEach(payment => {
       totalEarned += payment.amount;
       if (payment.status === 'pending' || payment.status === 'accept') {
@@ -78,23 +100,23 @@ export default function FarmerPaymentsScreen({ navigation }) {
         receivedAmount += payment.amount;
       }
     });
-    
+
     setSummary({ totalEarned, pendingAmount, receivedAmount });
     setLoading(false);
   };
 
   const handleMarkAsReceived = async (paymentId) => {
     Alert.alert(
-      'Confirm Payment Received',
-      'Have you received this payment?',
+      t('confirmPaymentReceived') || 'Confirm Payment Received',
+      t('confirmPaymentReceivedPrompt') || 'Have you received this payment?',
       [
-        { text: 'No', style: 'cancel' },
+        { text: t('no') || 'No', style: 'cancel' },
         {
-          text: 'Yes',
+          text: t('yes') || 'Yes',
           onPress: async () => {
             await updatePaymentStatus(paymentId, 'received');
             loadPayments();
-            Alert.alert('Success', 'Payment marked as received');
+            Alert.alert(t('success') || 'Success', t('paymentMarkedReceived') || 'Payment marked as received');
           }
         }
       ]
@@ -104,6 +126,7 @@ export default function FarmerPaymentsScreen({ navigation }) {
   const getPaymentStatusColor = (status) => {
     switch(status) {
       case 'advance_paid': return '#FFC107';
+      case 'paid': return '#4CAF50';
       case 'pending': return '#f44336';
       case 'received': return '#4CAF50';
       default: return '#999';
@@ -112,9 +135,10 @@ export default function FarmerPaymentsScreen({ navigation }) {
 
   const getPaymentStatusText = (status) => {
     switch(status) {
-      case 'advance_paid': return 'Advance Paid (30%)';
-      case 'pending': return 'Pending';
-      case 'received': return 'Received';
+      case 'advance_paid': return t('advancePaidStatus') || 'Advance Paid (30%)';
+      case 'paid': return t('paid') || 'Paid';
+      case 'pending': return t('pending') || 'Pending';
+      case 'received': return t('received') || 'Received';
       default: return status;
     }
   };
@@ -122,7 +146,7 @@ export default function FarmerPaymentsScreen({ navigation }) {
   const renderPayment = ({ item }) => (
     <View style={[styles.paymentCard, { backgroundColor: colors.card }]}>
       <View style={[styles.paymentHeader, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.contractId, { color: colors.textSecondary }]}>Contract #{item.contractId.slice(-6)}</Text>
+        <Text style={[styles.contractId, { color: colors.textSecondary }]}>{t('contract') || 'Contract'} #{item.contractId.slice(-6)}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getPaymentStatusColor(item.status) }]}>
           <Text style={styles.statusText}>{getPaymentStatusText(item.status)}</Text>
         </View>
@@ -131,25 +155,31 @@ export default function FarmerPaymentsScreen({ navigation }) {
       <View style={styles.paymentDetails}>
         <Text style={[styles.cropName, { color: colors.text }]}>🌾 {item.cropName}</Text>
         <Text style={[styles.buyerName, { color: colors.textSecondary }]}>👤 {item.buyerName}</Text>
-        <Text style={styles.amount}>💰 Amount: ₹{item.amount}</Text>
-        <Text style={[styles.paymentType, { color: colors.textSecondary }]}>💳 Type: {item.type === 'advance' ? 'Advance Payment (30%)' : 'Remaining Payment (70%)'}</Text>
-        <Text style={[styles.date, { color: colors.textSecondary }]}>📅 Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+        <Text style={styles.amount}>💰 {t('amount') || 'Amount'}: ₹{item.amount}</Text>
+        <Text style={[styles.paymentType, { color: colors.textSecondary }]}>
+          💳 {t('type') || 'Type'}: {item.type === 'advance' ? (t('advancePaymentLabel') || 'Advance Payment (30%)') : (t('remainingPaymentLabel') || 'Remaining Payment (70%)')}
+        </Text>
+        {formatDateSafe(item.dueDate) ? (
+          <Text style={[styles.date, { color: colors.textSecondary }]}>📅 {t('due') || 'Due'}: {formatDateSafe(item.dueDate)}</Text>
+        ) : formatDateSafe(item.paidAt) ? (
+          <Text style={[styles.date, { color: colors.textSecondary }]}>📅 {t('paid') || 'Paid'}: {formatDateSafe(item.paidAt)}</Text>
+        ) : null}
       </View>
 
       {item.status === 'advance_paid' && (
         <View style={styles.noteContainer}>
           <Text style={styles.noteText}>
-            ⚠️ Advance payment received. Remaining 70% due on delivery.
+            ⚠️ {t('advanceReceivedNote') || 'Advance payment received. Remaining 70% due on delivery.'}
           </Text>
         </View>
       )}
 
-      {item.status === 'pending' && (
+      {(item.status === 'pending' || item.status === 'paid') && (
         <TouchableOpacity 
           style={styles.receivedButton}
           onPress={() => handleMarkAsReceived(item.id)}
         >
-          <Text style={styles.receivedButtonText}>✓ Mark as Received</Text>
+          <Text style={styles.receivedButtonText}>✓ {t('markAsReceived') || 'Mark as Received'}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -169,15 +199,15 @@ export default function FarmerPaymentsScreen({ navigation }) {
       <View style={[styles.summaryContainer, { backgroundColor: colors.card }]}>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: colors.text }]}>₹{summary.totalEarned}</Text>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Earned</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('totalEarned') || 'Total Earned'}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#FFC107' }]}>₹{summary.pendingAmount}</Text>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Pending</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('pending') || 'Pending'}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>₹{summary.receivedAmount}</Text>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Received</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('received') || 'Received'}</Text>
         </View>
       </View>
 
@@ -187,7 +217,7 @@ export default function FarmerPaymentsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No payment records found</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noPaymentRecords') || 'No payment records found'}</Text>
           </View>
         }
       />

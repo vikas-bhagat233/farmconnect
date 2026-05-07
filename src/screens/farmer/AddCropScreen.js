@@ -14,11 +14,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { addCrop } from '../../services/cropService';
 import { uploadToCloudinary } from '../../services/cloudinaryService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const CROP_CATEGORIES = ['Vegetables', 'Fruits', 'Grains', 'Spices', 'Others'];
 
 export default function AddCropScreen({ navigation }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [cropData, setCropData] = useState({
     name: '',
     category: '',
@@ -55,7 +57,7 @@ export default function AddCropScreen({ navigation }) {
 
   const handleSubmit = async () => {
     if (!cropData.name || !cropData.quantity || !cropData.price) {
-      Alert.alert('Error', 'Please fill all required fields');
+      Alert.alert(t('error') || 'Error', t('fillRequiredFields') || 'Please fill all required fields');
       return;
     }
 
@@ -71,7 +73,7 @@ export default function AddCropScreen({ navigation }) {
     const result = await addCrop({
       ...cropData,
       farmerId: user.uid,
-      farmerName: user.displayName || 'Farmer',
+      farmerName: user.displayName || (t('farmer') || 'Farmer'),
       images: imageUrls,
       quantity: parseInt(cropData.quantity),
       price: parseInt(cropData.price)
@@ -80,10 +82,10 @@ export default function AddCropScreen({ navigation }) {
     setLoading(false);
 
     if (result.success) {
-      Alert.alert('Success', 'Crop added successfully');
+      Alert.alert(t('success') || 'Success', t('cropAddedSuccessfully') || 'Crop added successfully');
       navigation.goBack();
     } else {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('error') || 'Error', result.error);
     }
   };
 
@@ -92,7 +94,7 @@ export default function AddCropScreen({ navigation }) {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Crop Name *"
+          placeholder={t('cropNameRequired') || 'Crop Name *'}
           value={cropData.name}
           onChangeText={(text) => setCropData({...cropData, name: text})}
         />
@@ -108,7 +110,7 @@ export default function AddCropScreen({ navigation }) {
               onPress={() => setCropData({...cropData, category: cat})}
             >
               <Text style={cropData.category === cat ? styles.categoryTextSelected : styles.categoryText}>
-                {cat}
+                {t(`category_${cat.toLowerCase()}`) || cat}
               </Text>
             </TouchableOpacity>
           ))}
@@ -116,7 +118,7 @@ export default function AddCropScreen({ navigation }) {
 
         <TextInput
           style={styles.input}
-          placeholder="Quantity (in kg) *"
+          placeholder={t('quantityRequiredKg') || 'Quantity (in kg) *'}
           value={cropData.quantity}
           onChangeText={(text) => setCropData({...cropData, quantity: text})}
           keyboardType="numeric"
@@ -124,7 +126,7 @@ export default function AddCropScreen({ navigation }) {
 
         <TextInput
           style={styles.input}
-          placeholder="Price per kg (₹) *"
+          placeholder={t('pricePerKgRequired') || 'Price per kg (₹) *'}
           value={cropData.price}
           onChangeText={(text) => setCropData({...cropData, price: text})}
           keyboardType="numeric"
@@ -132,7 +134,7 @@ export default function AddCropScreen({ navigation }) {
 
         <TextInput
           style={styles.textArea}
-          placeholder="Description"
+          placeholder={t('description') || 'Description'}
           value={cropData.description}
           onChangeText={(text) => setCropData({...cropData, description: text})}
           multiline
@@ -141,19 +143,19 @@ export default function AddCropScreen({ navigation }) {
 
         <TextInput
           style={styles.input}
-          placeholder="Location"
+          placeholder={t('location') || 'Location'}
           value={cropData.location}
           onChangeText={(text) => setCropData({...cropData, location: text})}
         />
 
         <View style={styles.imageSection}>
-          <Text style={styles.imageLabel}>Crop Images</Text>
+          <Text style={styles.imageLabel}>{t('cropImages') || 'Crop Images'}</Text>
           <View style={styles.imageButtons}>
             <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-              <Text style={styles.imageButtonText}>📷 Gallery</Text>
+              <Text style={styles.imageButtonText}>📷 {t('gallery') || 'Gallery'}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.imageButton} onPress={takePhoto}>
-              <Text style={styles.imageButtonText}>📸 Camera</Text>
+              <Text style={styles.imageButtonText}>📸 {t('camera') || 'Camera'}</Text>
             </TouchableOpacity>
           </View>
           
@@ -172,7 +174,7 @@ export default function AddCropScreen({ navigation }) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.submitButtonText}>Add Crop</Text>
+            <Text style={styles.submitButtonText}>{t('addCrop') || 'Add Crop'}</Text>
           )}
         </TouchableOpacity>
       </View>

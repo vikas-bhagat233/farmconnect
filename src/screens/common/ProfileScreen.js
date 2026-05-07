@@ -169,12 +169,12 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Farm Details</Text>
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Farm Name:</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{profile?.farmName || 'Not provided'}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('farmName') || 'Farm Name'}:</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{profile?.farmName || t('notProvided') || 'Not provided'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Farm Size:</Text>
-            <Text style={[styles.infoValue, { color: colors.text }]}>{profile?.farmSize || 'Not provided'}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{t('farmSize') || 'Farm Size'}:</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{profile?.farmSize || t('notProvided') || 'Not provided'}</Text>
           </View>
         </View>
       )}
@@ -193,15 +193,15 @@ export default function ProfileScreen({ navigation }) {
           onPress={() => {
             const newRole = profile?.role === 'farmer' ? 'buyer' : 'farmer';
             Alert.alert(
-              'Switch Role',
-              `Are you sure you want to switch your account to ${newRole}?`,
+              t('switchRole') || 'Switch Role',
+              `${t('switchRolePrompt') || 'Are you sure you want to switch your account to'} ${newRole}?`,
               [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('cancel') || 'Cancel', style: 'cancel' },
                 { 
-                  text: 'Switch', 
+                  text: t('switch') || 'Switch', 
                   onPress: async () => {
                     await saveUserRole(newRole);
-                    Alert.alert('Role Switched', `Your account is now set to "${newRole}". The dashboard will update automatically.`);
+                    Alert.alert(t('roleSwitched') || 'Role Switched', `${t('roleSwitchedMessage') || 'Your account is now set to'} "${newRole}". ${t('dashboardWillUpdate') || 'The dashboard will update automatically.'}`);
                     loadProfile();
                   }
                 }
@@ -209,7 +209,7 @@ export default function ProfileScreen({ navigation }) {
             );
           }}
         >
-          <Text style={[styles.settingsButtonText, { color: '#fff', fontWeight: 'bold' }]}>🔄 Switch to {profile?.role === 'farmer' ? 'Buyer' : 'Farmer'}</Text>
+          <Text style={[styles.settingsButtonText, { color: '#fff', fontWeight: 'bold' }]}>🔄 {t('switchTo') || 'Switch to'} {profile?.role === 'farmer' ? (t('buyer') || 'Buyer') : (t('farmer') || 'Farmer')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 

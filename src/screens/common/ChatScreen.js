@@ -13,11 +13,13 @@ import {
 } from 'react-native';
 import { getMessages, sendMessage, markMessagesAsRead } from '../../services/messageService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { sendNotification } from '../../services/notificationService';
 
 export default function ChatScreen({ navigation, route }) {
   const { userId, userName, userRole } = route.params;
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -64,7 +66,7 @@ export default function ChatScreen({ navigation, route }) {
     setNewMessage('');
     
     // Send notification
-    await sendNotification(userId, 'New Message', `${user.displayName}: ${newMessage}`);
+    await sendNotification(userId, t('newMessage') || 'New Message', `${user.displayName}: ${newMessage}`);
     
     setSending(false);
     flatListRef.current?.scrollToEnd();
@@ -111,8 +113,8 @@ export default function ChatScreen({ navigation, route }) {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No messages yet</Text>
-            <Text style={styles.emptySubtext}>Start a conversation!</Text>
+            <Text style={styles.emptyText}>{t('noMessagesYet') || 'No messages yet'}</Text>
+            <Text style={styles.emptySubtext}>{t('startConversation') || 'Start a conversation!'}</Text>
           </View>
         }
       />
@@ -120,7 +122,7 @@ export default function ChatScreen({ navigation, route }) {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Type a message..."
+          placeholder={t('typeMessage') || 'Type a message...'}
           value={newMessage}
           onChangeText={setNewMessage}
           multiline
@@ -134,7 +136,7 @@ export default function ChatScreen({ navigation, route }) {
           {sending ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.sendButtonText}>Send</Text>
+            <Text style={styles.sendButtonText}>{t('send') || 'Send'}</Text>
           )}
         </TouchableOpacity>
       </View>

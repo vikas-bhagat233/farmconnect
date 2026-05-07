@@ -11,10 +11,14 @@ import {
 import RazorpayCheckout from 'react-native-razorpay';
 import { createRazorpayOrder, verifyRazorpayPayment, getPaymentDetails } from '../../services/paymentService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function PaymentScreen({ navigation, route }) {
-  const { contractId, type } = route.params;
+  const { contractId, type, amount: paramAmount, farmerId: paramFarmerId,
+          farmerName: paramFarmerName, cropName: paramCropName,
+          buyerId: paramBuyerId, buyerName: paramBuyerName } = route.params;
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -24,15 +28,46 @@ export default function PaymentScreen({ navigation, route }) {
   }, []);
 
   const loadPaymentDetails = async () => {
-    const data = await getPaymentDetails(contractId, type);
-    setPayment(data);
-    setLoading(false);
+    try {
+      const data = await getPaymentDetails(contractId, type);
+      setPayment(data);
+    } catch (error) {
+      console.error('loadPaymentDetails error:', error);
+      // Fallback: build payment object from route params so screen still works
+      if (paramAmount) {
+        setPayment({
+          contractId,
+          type,
+          amount: paramAmount,
+          farmerId: paramFarmerId,
+          farmerName: paramFarmerName,
+          cropName: paramCropName,
+          buyerId: paramBuyerId || user?.uid,
+          buyerName: paramBuyerName || user?.displayName,
+          status: 'pending'
+        });
+      } else {
+        Alert.alert(
+          t('error') || 'Error',
+          (t('couldNotLoadPaymentDetails') || 'Could not load payment details: ') + error.message,
+          [{ text: t('goBack') || 'Go Back', onPress: () => navigation.goBack() }]
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPaymentTypeText = () => {
+    return type === 'advance'
+      ? (t('advancePaymentLabel') || 'Advance Payment (30%)')
+      : (t('remainingPaymentLabel') || 'Remaining Payment (70%)');
   };
 
   const handlePayment = async () => {
     if (!payment) return;
     if (!process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID) {
-      Alert.alert('Payment Failed', 'Razorpay key is not configured.');
+      Alert.alert(t('paymentFailed') || 'Payment Failed', t('razorpayKeyNotConfigured') || 'Razorpay key is not configured.');
       return;
     }
 
@@ -41,7 +76,7 @@ export default function PaymentScreen({ navigation, route }) {
     try {
       const amountPaise = Math.round(Number(payment.amount) * 100);
       if (!Number.isFinite(amountPaise) || amountPaise <= 0) {
-        throw new Error('Invalid payment amount.');
+        throw new Error(t('invalidPaymentAmount') || 'Invalid payment amount.');
       }
 
       const order = await createRazorpayOrder({
@@ -56,7 +91,7 @@ export default function PaymentScreen({ navigation, route }) {
         amount: order.amount,
         currency: order.currency,
         name: 'FarmConnect',
-        description: `${payment.cropName || 'Crop'} - ${getPaymentTypeText()}`,
+        description: `${payment.cropName || (t('crop') || 'Crop')} - ${getPaymentTypeText()}`,
         prefill: {
           email: user?.email || '',
           contact: user?.phoneNumber || '',
@@ -79,17 +114,17 @@ export default function PaymentScreen({ navigation, route }) {
       });
 
       if (!verifyResult.success) {
-        throw new Error(verifyResult.error || 'Payment verification failed.');
+        throw new Error(verifyResult.error || (t('paymentVerificationFailed') || 'Payment verification failed.'));
       }
 
       Alert.alert(
-        'Payment Successful',
-        `₹${payment.amount} paid successfully`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        t('paymentSuccessful') || 'Payment Successful',
+        `₹${payment.amount} ${t('paidSuccessfully') || 'paid successfully'}`,
+        [{ text: t('ok') || 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
-      const message = error?.error?.description || error?.description || error?.message || 'Payment failed.';
-      Alert.alert('Payment Failed', message);
+      const message = error?.error?.description || error?.description || error?.message || (t('paymentFailed') || 'Payment failed.');
+      Alert.alert(t('paymentFailed') || 'Payment Failed', message);
     } finally {
       setProcessing(false);
     }
@@ -98,41 +133,56 @@ export default function PaymentScreen({ navigation, route }) {
   const handleSimulatedPayment = async () => {
     setProcessing(true);
     try {
-      // Simulate backend call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const { updateDoc, doc, db, getDoc } = require('../../services/firebase');
-      
-      // 1. Update Payment Record
-      const paymentRef = doc(db, 'payments', payment.id);
-      await updateDoc(paymentRef, { 
-        status: 'paid',
-        transactionId: 'SIM_' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-        paidAt: new Date().toISOString()
-      });
+
+      const { updateDoc, doc, db, collection, addDoc } = require('../../services/firebase');
+      const transactionId = 'SIM_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+      // 1. Create or update the payment record
+      let paymentId = payment.id;
+      if (!paymentId) {
+        const newPaymentRef = await addDoc(collection(db, 'payments'), {
+          contractId,
+          type: payment.type || type,
+          amount: payment.amount,
+          farmerId: payment.farmerId,
+          farmerName: payment.farmerName,
+          buyerId: payment.buyerId || user.uid,
+          buyerName: payment.buyerName || user.displayName,
+          cropName: payment.cropName,
+          status: 'paid',
+          transactionId,
+          paidAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        });
+        paymentId = newPaymentRef.id;
+        await updateDoc(newPaymentRef, { id: paymentId });
+      } else {
+        await updateDoc(doc(db, 'payments', paymentId), {
+          status: 'paid',
+          transactionId,
+          paidAt: new Date().toISOString()
+        });
+      }
 
       // 2. Update Contract Record
       const contractRef = doc(db, 'contracts', contractId);
       if (type === 'advance') {
-        await updateDoc(contractRef, { advancePaid: true });
+        await updateDoc(contractRef, { advancePaid: true, updatedAt: new Date().toISOString() });
       } else {
-        await updateDoc(contractRef, { fullPaid: true, status: 'completed' });
+        await updateDoc(contractRef, { fullPaid: true, status: 'completed', updatedAt: new Date().toISOString() });
       }
 
       Alert.alert(
-        'Success (Simulated)',
-        `₹${payment.amount} paid successfully via simulation mode.`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        t('paymentSuccessful') || 'Payment Successful',
+        `₹${payment.amount} ${t('paidSuccessfully') || 'paid successfully.'}`,
+        [{ text: t('ok') || 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
-      Alert.alert('Simulation Failed', error.message);
+      Alert.alert(t('paymentFailed') || 'Payment Failed', error.message);
     } finally {
       setProcessing(false);
     }
-  };
-
-  const getPaymentTypeText = () => {
-    return type === 'advance' ? 'Advance Payment (30%)' : 'Remaining Payment (70%)';
   };
 
   if (loading) {
@@ -146,63 +196,63 @@ export default function PaymentScreen({ navigation, route }) {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.paymentCard}>
-        <Text style={styles.paymentTitle}>Payment Details</Text>
-        
+        <Text style={styles.paymentTitle}>{t('paymentDetails') || 'Payment Details'}</Text>
+
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Contract ID:</Text>
+          <Text style={styles.label}>{t('contractId') || 'Contract ID'}:</Text>
           <Text style={styles.value}>#{contractId.slice(-8)}</Text>
         </View>
-        
+
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Payment Type:</Text>
+          <Text style={styles.label}>{t('paymentType') || 'Payment Type'}:</Text>
           <Text style={styles.value}>{getPaymentTypeText()}</Text>
         </View>
-        
+
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Crop:</Text>
+          <Text style={styles.label}>{t('crop') || 'Crop'}:</Text>
           <Text style={styles.value}>{payment?.cropName}</Text>
         </View>
-        
+
         <View style={styles.detailRow}>
-          <Text style={styles.label}>Farmer:</Text>
+          <Text style={styles.label}>{t('farmer') || 'Farmer'}:</Text>
           <Text style={styles.value}>{payment?.farmerName}</Text>
         </View>
-        
+
         <View style={styles.amountContainer}>
-          <Text style={styles.amountLabel}>Amount to Pay</Text>
+          <Text style={styles.amountLabel}>{t('amountToPay') || 'Amount to Pay'}</Text>
           <Text style={styles.amountValue}>₹{payment?.amount}</Text>
         </View>
       </View>
 
       <View style={styles.paymentMethods}>
-        <Text style={styles.sectionTitle}>Payment Methods</Text>
-        
+        <Text style={styles.sectionTitle}>{t('paymentMethods') || 'Payment Methods'}</Text>
+
         <TouchableOpacity style={styles.methodCard}>
           <Text style={styles.methodIcon}>💳</Text>
           <View style={styles.methodInfo}>
-            <Text style={styles.methodName}>Credit/Debit Card</Text>
-            <Text style={styles.methodDesc}>Pay using card</Text>
+            <Text style={styles.methodName}>{t('creditDebitCard') || 'Credit/Debit Card'}</Text>
+            <Text style={styles.methodDesc}>{t('payUsingCard') || 'Pay using card'}</Text>
           </View>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.methodCard}>
           <Text style={styles.methodIcon}>📱</Text>
           <View style={styles.methodInfo}>
-            <Text style={styles.methodName}>UPI</Text>
-            <Text style={styles.methodDesc}>Google Pay, PhonePe, Paytm</Text>
+            <Text style={styles.methodName}>{t('upi') || 'UPI'}</Text>
+            <Text style={styles.methodDesc}>{t('googlePayPhonePePaytm') || 'Google Pay, PhonePe, Paytm'}</Text>
           </View>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.methodCard}>
           <Text style={styles.methodIcon}>🏦</Text>
           <View style={styles.methodInfo}>
-            <Text style={styles.methodName}>Net Banking</Text>
-            <Text style={styles.methodDesc}>All major banks</Text>
+            <Text style={styles.methodName}>{t('netBanking') || 'Net Banking'}</Text>
+            <Text style={styles.methodDesc}>{t('allMajorBanks') || 'All major banks'}</Text>
           </View>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.payButton}
         onPress={handlePayment}
         disabled={processing}
@@ -210,16 +260,16 @@ export default function PaymentScreen({ navigation, route }) {
         {processing ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.payButtonText}>Pay ₹{payment?.amount} (Razorpay)</Text>
+          <Text style={styles.payButtonText}>{t('payWithRazorpay') || `Pay ₹${payment?.amount} (Razorpay)`}</Text>
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.payButton, { backgroundColor: '#666', marginTop: 0 }]}
         onPress={handleSimulatedPayment}
         disabled={processing}
       >
-        <Text style={styles.payButtonText}>Simulate Payment (No Backend)</Text>
+        <Text style={styles.payButtonText}>{t('simulatePayment') || 'Simulate Payment (No Backend)'}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

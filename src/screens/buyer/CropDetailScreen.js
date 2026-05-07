@@ -16,10 +16,12 @@ import { getFarmerById } from '../../services/firestoreService';
 import { getCropById } from '../../services/cropService';
 import { getMarketPrice } from '../../services/marketPriceService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function CropDetailScreen({ navigation, route }) {
   const { cropId } = route.params;
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [crop, setCrop] = useState(null);
   const [farmer, setFarmer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,17 +59,17 @@ export default function CropDetailScreen({ navigation, route }) {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out this ${crop.name} - ${crop.quantity}kg at ₹${crop.price}/kg`,
-        title: 'Crop Details'
+        message: `${t('shareCropPrefix') || 'Check out this'} ${crop.name} - ${crop.quantity}kg ${t('shareCropAt') || 'at'} ₹${crop.price}/kg`,
+        title: t('cropDetails') || 'Crop Details'
       });
     } catch (error) {
-      Alert.alert('Error', 'Failed to share');
+      Alert.alert(t('error') || 'Error', t('failedToShare') || 'Failed to share');
     }
   };
 
   const handleNegotiate = () => {
     if (!negotiationPrice || !negotiationQuantity) {
-      Alert.alert('Error', 'Please enter price and quantity');
+      Alert.alert(t('error') || 'Error', t('enterPriceQuantity') || 'Please enter price and quantity');
       return;
     }
     
@@ -103,7 +105,7 @@ export default function CropDetailScreen({ navigation, route }) {
   if (!crop) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Crop not found</Text>
+        <Text style={styles.errorText}>{t('cropNotFound') || 'Crop not found'}</Text>
       </View>
     );
   }
@@ -134,39 +136,39 @@ export default function CropDetailScreen({ navigation, route }) {
       <View style={styles.infoContainer}>
         <Text style={styles.cropName}>{crop.name}</Text>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Price</Text>
+          <Text style={styles.priceLabel}>{t('price') || 'Price'}</Text>
           <Text style={styles.priceValue}>₹{crop.price}/kg</Text>
         </View>
 
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{crop.quantity}</Text>
-            <Text style={styles.statLabel}>Quantity (kg)</Text>
+            <Text style={styles.statLabel}>{t('quantityKg') || 'Quantity (kg)'}</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{crop.category}</Text>
-            <Text style={styles.statLabel}>Category</Text>
+            <Text style={styles.statLabel}>{t('category') || 'Category'}</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{crop.quality}</Text>
-            <Text style={styles.statLabel}>Quality Grade</Text>
+            <Text style={styles.statLabel}>{t('qualityGrade') || 'Quality Grade'}</Text>
           </View>
         </View>
 
         {/* Market Price Comparison */}
         <View style={styles.marketPriceContainer}>
-          <Text style={styles.sectionTitle}>Market Price Comparison</Text>
+          <Text style={styles.sectionTitle}>{t('marketPriceComparison') || 'Market Price Comparison'}</Text>
           <View style={styles.priceComparison}>
             <View style={styles.priceItem}>
-              <Text style={styles.priceItemLabel}>Seller Price</Text>
+              <Text style={styles.priceItemLabel}>{t('sellerPrice') || 'Seller Price'}</Text>
               <Text style={styles.priceItemValue}>₹{crop.price}</Text>
             </View>
             <View style={styles.priceItem}>
-              <Text style={styles.priceItemLabel}>Market Avg</Text>
+              <Text style={styles.priceItemLabel}>{t('marketAvg') || 'Market Avg'}</Text>
               <Text style={styles.priceItemValue}>₹{marketPrice || crop.marketPrice || crop.price + 5}</Text>
             </View>
             <View style={styles.priceItem}>
-              <Text style={styles.priceItemLabel}>You Save</Text>
+              <Text style={styles.priceItemLabel}>{t('youSave') || 'You Save'}</Text>
               <Text style={[styles.priceItemValue, { color: '#4CAF50' }]}>
                 ₹{((marketPrice || crop.marketPrice || crop.price + 5) - crop.price).toFixed(2)}
               </Text>
@@ -175,15 +177,15 @@ export default function CropDetailScreen({ navigation, route }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
+          <Text style={styles.sectionTitle}>{t('description') || 'Description'}</Text>
           <Text style={styles.description}>
-            {crop.description || 'No description provided'}
+            {crop.description || (t('noDescription') || 'No description provided')}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
-          <Text style={styles.location}>{crop.location || 'Location not specified'}</Text>
+          <Text style={styles.sectionTitle}>{t('location') || 'Location'}</Text>
+          <Text style={styles.location}>{crop.location || (t('locationNotSpecified') || 'Location not specified')}</Text>
         </View>
 
         {/* Farmer Info */}
@@ -192,13 +194,13 @@ export default function CropDetailScreen({ navigation, route }) {
             style={styles.farmerSection}
             onPress={() => navigation.navigate('FarmerProfile', { farmerId: farmer.id })}
           >
-            <Text style={styles.sectionTitle}>Seller Information</Text>
+            <Text style={styles.sectionTitle}>{t('sellerInformation') || 'Seller Information'}</Text>
             <View style={styles.farmerCard}>
               <Image source={{ uri: farmer.photoURL }} style={styles.farmerImage} />
               <View style={styles.farmerInfo}>
                 <Text style={styles.farmerName}>{farmer.name}</Text>
-                <Text style={styles.farmerRating}>⭐ {farmer.rating || 4.5} (120 reviews)</Text>
-                <Text style={styles.farmerLocation}>📍 {farmer.location || 'India'}</Text>
+                <Text style={styles.farmerRating}>⭐ {farmer.rating || 4.5} (120 {t('reviews') || 'reviews'})</Text>
+                <Text style={styles.farmerLocation}>📍 {farmer.location || (t('india') || 'India')}</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -210,18 +212,18 @@ export default function CropDetailScreen({ navigation, route }) {
             style={styles.negotiateButton}
             onPress={() => setShowNegotiateModal(true)}
           >
-            <Text style={styles.negotiateButtonText}>💰 Negotiate</Text>
+            <Text style={styles.negotiateButtonText}>💰 {t('negotiate') || 'Negotiate'}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
-            <Text style={styles.chatButtonText}>💬 Chat with Farmer</Text>
+            <Text style={styles.chatButtonText}>💬 {t('chatWithFarmer') || 'Chat with Farmer'}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.contractButton}
             onPress={() => navigation.navigate('MakeContract', { cropId: crop.id })}
           >
-            <Text style={styles.contractButtonText}>📄 Make Contract</Text>
+            <Text style={styles.contractButtonText}>📄 {t('makeContract') || 'Make Contract'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -234,12 +236,12 @@ export default function CropDetailScreen({ navigation, route }) {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Negotiate Price</Text>
-            <Text style={styles.modalSubtitle}>Crop: {crop.name}</Text>
+            <Text style={styles.modalTitle}>{t('negotiatePrice') || 'Negotiate Price'}</Text>
+            <Text style={styles.modalSubtitle}>{t('crop') || 'Crop'}: {crop.name}</Text>
             
             <TextInput
               style={styles.modalInput}
-              placeholder="Your offered price (₹/kg)"
+              placeholder={t('offeredPricePlaceholder') || 'Your offered price (₹/kg)'}
               value={negotiationPrice}
               onChangeText={setNegotiationPrice}
               keyboardType="numeric"
@@ -247,7 +249,7 @@ export default function CropDetailScreen({ navigation, route }) {
             
             <TextInput
               style={styles.modalInput}
-              placeholder="Quantity (kg)"
+              placeholder={t('quantityKg') || 'Quantity (kg)'}
               value={negotiationQuantity}
               onChangeText={setNegotiationQuantity}
               keyboardType="numeric"
@@ -258,13 +260,13 @@ export default function CropDetailScreen({ navigation, route }) {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowNegotiateModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('cancel') || 'Cancel'}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalButton, styles.sendButton]}
                 onPress={handleNegotiate}
               >
-                <Text style={styles.sendButtonText}>Send Offer</Text>
+                <Text style={styles.sendButtonText}>{t('sendOffer') || 'Send Offer'}</Text>
               </TouchableOpacity>
             </View>
           </View>

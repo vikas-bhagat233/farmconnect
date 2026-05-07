@@ -76,27 +76,27 @@ export default function FarmerContractsScreen({ navigation }) {
   const handleContractAction = async (contractId, action) => {
     const isAccepting = action === 'active';
     Alert.alert(
-      isAccepting ? 'Accept Contract' : 'Reject Contract',
-      isAccepting
-        ? 'Do you want to accept this contract? The buyer will be notified to pay the advance.'
-        : 'Are you sure you want to reject this contract?',
+        isAccepting ? (t('acceptContract') || 'Accept Contract') : (t('rejectContract') || 'Reject Contract'),
+        isAccepting
+          ? (t('acceptContractPrompt') || 'Do you want to accept this contract? The buyer will be notified to pay the advance.')
+          : (t('rejectContractPrompt') || 'Are you sure you want to reject this contract?'),
       [
-        { text: 'Cancel', style: 'cancel' },
+          { text: t('cancel') || 'Cancel', style: 'cancel' },
         {
-          text: isAccepting ? 'Accept' : 'Reject',
+            text: isAccepting ? (t('accept') || 'Accept') : (t('reject') || 'Reject'),
           style: isAccepting ? 'default' : 'destructive',
           onPress: async () => {
             const result = await updateContractStatus(contractId, action);
             if (result.success) {
-              Alert.alert(
-                'Success',
-                isAccepting
-                  ? 'Contract accepted! The buyer has been notified to pay the advance.'
-                  : 'Contract rejected.'
-              );
+                Alert.alert(
+                  t('success') || 'Success',
+                  isAccepting
+                    ? (t('contractAcceptedNotifyBuyer') || 'Contract accepted! The buyer has been notified to pay the advance.')
+                    : (t('contractRejected') || 'Contract rejected.')
+                );
               if (isAccepting) setActiveTab('active');
             } else {
-              Alert.alert('Error', result.error || 'Failed to update contract');
+                Alert.alert(t('error') || 'Error', result.error || (t('failedToUpdateContract') || 'Failed to update contract'));
             }
           }
         }
@@ -128,16 +128,17 @@ export default function FarmerContractsScreen({ navigation }) {
     >
       <View style={styles.contractHeader}>
         <Text style={[styles.buyerName, { color: colors.text }]}>{item.buyerName}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}
+        >
           <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
         </View>
       </View>
 
       <View style={styles.contractDetails}>
         <Text style={[styles.cropName, { color: colors.text }]}>🌾 {item.cropName}</Text>
-        <Text style={[styles.quantity, { color: colors.textSecondary }]}>📦 {item.quantity} kg</Text>
-        <Text style={[styles.price, { color: colors.textSecondary }]}>💰 ₹{item.agreedPrice}/kg</Text>
-        <Text style={styles.total}>💵 Total: ₹{item.totalAmount}</Text>
+        <Text style={[styles.quantity, { color: colors.textSecondary }]}>📦 {t('quantity') || 'Quantity'}: {item.quantity} kg</Text>
+        <Text style={[styles.price, { color: colors.textSecondary }]}>💰 {t('price') || 'Price'}: ₹{item.agreedPrice}/kg</Text>
+        <Text style={styles.total}>💵 {t('total') || 'Total'}: ₹{item.totalAmount}</Text>
         <Text style={[styles.date, { color: colors.textSecondary }]}>📅 {new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
 
@@ -147,13 +148,13 @@ export default function FarmerContractsScreen({ navigation }) {
             style={[styles.actionButton, styles.acceptButton]}
             onPress={() => handleContractAction(item.id, 'active')}
           >
-            <Text style={styles.actionButtonText}>✓ Accept</Text>
+            <Text style={styles.actionButtonText}>✓ {t('accept') || 'Accept'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.rejectButton]}
             onPress={() => handleContractAction(item.id, 'rejected')}
           >
-            <Text style={styles.actionButtonText}>✗ Reject</Text>
+            <Text style={styles.actionButtonText}>✗ {t('reject') || 'Reject'}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -162,16 +163,16 @@ export default function FarmerContractsScreen({ navigation }) {
         <View style={[styles.paymentInfo, { borderTopColor: colors.border }]}>
           {!item.advancePaid ? (
             <Text style={{ color: '#FF9800', fontWeight: 'bold', fontSize: 13 }}>
-              ⏳ Buyer Payment Pending: ₹{item.advanceAmount} (30% Advance)
+              ⏳ {t('buyerPaymentPending') || 'Buyer Payment Pending'}: ₹{item.advanceAmount} (30% {t('advance') || 'Advance'})
             </Text>
           ) : (
             <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 13 }}>
-              ✅ Advance Received! Prepare for delivery of {item.quantity}kg.
+              ✅ {t('advanceReceivedPrepare') || 'Advance Received! Prepare for delivery of'} {item.quantity}kg.
             </Text>
           )}
           {item.advancePaid && (
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 5 }}>
-              Remaining: ₹{item.remainingAmount} (Due on delivery)
+              {t('remaining') || 'Remaining'}: ₹{item.remainingAmount} ({t('dueOnDelivery') || 'Due on delivery'})
             </Text>
           )}
         </View>
@@ -195,7 +196,7 @@ export default function FarmerContractsScreen({ navigation }) {
           onPress={() => setActiveTab('pending')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'pending' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Pending {contracts.filter(c => c.status === 'pending').length > 0 ? `(${contracts.filter(c => c.status === 'pending').length})` : ''}
+            {t('pending') || 'Pending'} {contracts.filter(c => c.status === 'pending').length > 0 ? `(${contracts.filter(c => c.status === 'pending').length})` : ''}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -203,7 +204,7 @@ export default function FarmerContractsScreen({ navigation }) {
           onPress={() => setActiveTab('active')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'active' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Active {contracts.filter(c => c.status === 'active' || c.status === 'accept').length > 0 ? `(${contracts.filter(c => c.status === 'active' || c.status === 'accept').length})` : ''}
+            {t('active') || 'Active'} {contracts.filter(c => c.status === 'active' || c.status === 'accept').length > 0 ? `(${contracts.filter(c => c.status === 'active' || c.status === 'accept').length})` : ''}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -211,7 +212,7 @@ export default function FarmerContractsScreen({ navigation }) {
           onPress={() => setActiveTab('completed')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'completed' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Completed {contracts.filter(c => c.status === 'completed').length > 0 ? `(${contracts.filter(c => c.status === 'completed').length})` : ''}
+            {t('completed') || 'Completed'} {contracts.filter(c => c.status === 'completed').length > 0 ? `(${contracts.filter(c => c.status === 'completed').length})` : ''}
           </Text>
         </TouchableOpacity>
       </View>

@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { updateUserProfile } from '../../services/firestoreService';
-import { uploadToCloudinary } from '../../services/cloudinaryService';
 
 export default function EditProfileScreen({ navigation }) {
+
   const { user, updateUser } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.displayName || '',
@@ -43,7 +45,7 @@ export default function EditProfileScreen({ navigation }) {
 
   const handleSave = async () => {
     if (!formData.name) {
-      Alert.alert('Error', 'Name is required');
+      Alert.alert(t('error') || 'Error', t('nameRequired') || 'Name is required');
       return;
     }
 
@@ -61,10 +63,10 @@ export default function EditProfileScreen({ navigation }) {
     
     if (result.success) {
       await updateUser({ displayName: formData.name, photoURL });
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert(t('success') || 'Success', t('profileUpdated') || 'Profile updated successfully');
       navigation.goBack();
     } else {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('error') || 'Error', result.error);
     }
     
     setLoading(false);
@@ -88,57 +90,57 @@ export default function EditProfileScreen({ navigation }) {
       </View>
 
       <View style={styles.formContainer}>
-        <Text style={styles.label}>Full Name *</Text>
+        <Text style={styles.label}>{t('fullName') || 'Full Name'} *</Text>
         <TextInput
           style={styles.input}
           value={formData.name}
           onChangeText={(text) => setFormData({...formData, name: text})}
-          placeholder="Enter your full name"
+          placeholder={t('enterFullName') || 'Enter your full name'}
         />
 
-        <Text style={styles.label}>Phone Number</Text>
+        <Text style={styles.label}>{t('phoneNumber') || 'Phone Number'}</Text>
         <TextInput
           style={styles.input}
           value={formData.phone}
           onChangeText={(text) => setFormData({...formData, phone: text})}
-          placeholder="Enter your phone number"
+          placeholder={t('enterPhoneNumber') || 'Enter your phone number'}
           keyboardType="phone-pad"
         />
 
-        <Text style={styles.label}>Location</Text>
+        <Text style={styles.label}>{t('location') || 'Location'}</Text>
         <TextInput
           style={styles.input}
           value={formData.location}
           onChangeText={(text) => setFormData({...formData, location: text})}
-          placeholder="Enter your location"
+          placeholder={t('enterLocation') || 'Enter your location'}
         />
 
-        <Text style={styles.label}>Bio</Text>
+        <Text style={styles.label}>{t('bio') || 'Bio'}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={formData.bio}
           onChangeText={(text) => setFormData({...formData, bio: text})}
-          placeholder="Tell us about yourself"
+          placeholder={t('enterBio') || 'Tell us about yourself'}
           multiline
           numberOfLines={4}
         />
 
         {user?.role === 'farmer' && (
           <>
-            <Text style={styles.label}>Farm Name</Text>
+            <Text style={styles.label}>{t('farmName') || 'Farm Name'}</Text>
             <TextInput
               style={styles.input}
               value={formData.farmName}
               onChangeText={(text) => setFormData({...formData, farmName: text})}
-              placeholder="Enter your farm name"
+              placeholder={t('enterFarmName') || 'Enter your farm name'}
             />
 
-            <Text style={styles.label}>Farm Size</Text>
+            <Text style={styles.label}>{t('farmSize') || 'Farm Size'}</Text>
             <TextInput
               style={styles.input}
               value={formData.farmSize}
               onChangeText={(text) => setFormData({...formData, farmSize: text})}
-              placeholder="e.g., 5 acres"
+              placeholder={t('enterFarmSize') || 'e.g., 5 acres'}
             />
           </>
         )}
@@ -151,7 +153,7 @@ export default function EditProfileScreen({ navigation }) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
+            <Text style={styles.saveButtonText}>{t('saveChanges') || 'Save Changes'}</Text>
           )}
         </TouchableOpacity>
       </View>

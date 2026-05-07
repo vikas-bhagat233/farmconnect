@@ -54,7 +54,7 @@ export const processPayment = async (paymentData) => {
     
     // Simulate payment processing
     setTimeout(async () => {
-      await updateDoc(paymentRef, { status: 'paid' });
+      await updateDoc(paymentRef, { status: 'paid', paidAt: new Date().toISOString() });
       
       // Update contract payment status
       const contractRef = doc(db, 'contracts', paymentData.contractId);
@@ -64,7 +64,7 @@ export const processPayment = async (paymentData) => {
       if (paymentData.type === 'advance') {
         await updateDoc(contractRef, { advancePaid: true });
       } else {
-        await updateDoc(contractRef, { fullPaid: true, status: 'completed' });
+        await updateDoc(contractRef, { fullPaid: true, status: 'completed', deliveryCompleted: true });
       }
     }, 2000);
     
@@ -75,6 +75,14 @@ export const processPayment = async (paymentData) => {
 };
 
 export const getPaymentDetails = async (contractId, type) => {
+  // Always fetch the contract first so we have full data
+  const contractSnap = await getDoc(doc(db, 'contracts', contractId));
+  if (!contractSnap.exists()) {
+    throw new Error('Contract not found');
+  }
+  const contractData = contractSnap.data();
+
+  // Check if a payment record already exists
   const paymentsQuery = query(
     collection(db, 'payments'),
     where('contractId', '==', contractId),
@@ -82,20 +90,27 @@ export const getPaymentDetails = async (contractId, type) => {
   );
   const snapshot = await getDocs(paymentsQuery);
   if (!snapshot.empty) {
-    return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    const existing = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+    // Ensure amount is always present (fallback to contract data)
+    if (!existing.amount) {
+      existing.amount = type === 'advance' ? contractData.advanceAmount : contractData.remainingAmount;
+    }
+    return existing;
   }
-  
-  // Get contract for payment amount
-  const contract = await getDoc(doc(db, 'contracts', contractId));
-  const contractData = contract.data();
-  
+
+  // No payment record yet — return contract data so PaymentScreen can proceed
+  // The payment record will be created when payment is confirmed
   return {
-    amount: type === 'advance' ? contractData.advanceAmount : contractData.remainingAmount,
-    type,
+    // No id — PaymentScreen must handle this (create record on success)
     contractId,
+    type,
+    amount: type === 'advance' ? contractData.advanceAmount : contractData.remainingAmount,
     farmerId: contractData.farmerId,
     farmerName: contractData.farmerName,
-    cropName: contractData.cropName
+    buyerId: contractData.buyerId,
+    buyerName: contractData.buyerName,
+    cropName: contractData.cropName,
+    status: 'pending'
   };
 };
 

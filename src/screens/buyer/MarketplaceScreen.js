@@ -49,7 +49,7 @@ export default function MarketplaceScreen({ navigation }) {
       <View style={styles.cropInfo}>
         <Text style={[styles.cropName, { color: colors.text }]}>{item.name}</Text>
         <Text style={styles.cropPrice}>₹{item.price}/kg</Text>
-        <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{item.quantity} kg available</Text>
+        <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{item.quantity} {t('kgAvailable') || 'kg available'}</Text>
         <Text style={[styles.farmerName, { color: colors.textSecondary }]}>👨‍🌾 {item.farmerName}</Text>
         <View style={styles.ratingContainer}>
           <Text style={styles.rating}>⭐ {item.rating || 4.5}</Text>
@@ -59,7 +59,7 @@ export default function MarketplaceScreen({ navigation }) {
         style={styles.negotiateButton}
         onPress={() => navigation.navigate('Negotiation', { cropId: item.id })}
       >
-        <Text style={styles.negotiateButtonText}>Negotiate</Text>
+        <Text style={styles.negotiateButtonText}>{t('negotiate') || 'Negotiate'}</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -69,7 +69,7 @@ export default function MarketplaceScreen({ navigation }) {
       <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
         <TextInput
           style={[styles.searchInput, { backgroundColor: colors.background, color: colors.text }]}
-          placeholder={t('search') || "Search crops..."}
+          placeholder={t('searchCrops') || 'Search crops...'}
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={handleSearch}
@@ -85,7 +85,7 @@ export default function MarketplaceScreen({ navigation }) {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No crops available</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noCropsAvailable') || 'No crops available'}</Text>
           </View>
         }
       />

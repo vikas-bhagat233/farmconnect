@@ -17,6 +17,7 @@ import { getBuyerStats, subscribeToBuyerStats } from '../../services/firestoreSe
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNotification } from '../../context/NotificationContext';
 import ChatbotModal from '../../components/chatbot/ChatbotModal';
 import { BarChart } from 'react-native-chart-kit';
 
@@ -27,6 +28,7 @@ export default function BuyerDashboardScreen({ navigation }) {
   const { user } = useAuth();
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { unreadCount } = useNotification();
   const [featuredCrops, setFeaturedCrops] = useState([]);
   const [stats, setStats] = useState({
     activeContracts: 0,
@@ -94,15 +96,25 @@ export default function BuyerDashboardScreen({ navigation }) {
                 <Text style={styles.greetingText}>{t('welcome')},</Text>
                 <Text style={styles.userNameText}>{user?.displayName || (t('buyer') || 'Buyer')}</Text>
               </View>
-              <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.profileContainer}>
-                {user?.photoURL ? (
-                  <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
-                ) : (
-                  <View style={styles.profilePlaceholder}>
-                    <Text style={styles.profileInitial}>{user?.displayName?.charAt(0).toUpperCase() || 'B'}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={{ position: 'relative', marginRight: 12 }}>
+                  <Text style={{ fontSize: 26 }}>🔔</Text>
+                  {unreadCount > 0 && (
+                    <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#f44336', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 }}>
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>{unreadCount > 99 ? '99+' : String(unreadCount)}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.profileContainer}>
+                  {user?.photoURL ? (
+                    <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
+                  ) : (
+                    <View style={styles.profilePlaceholder}>
+                      <Text style={styles.profileInitial}>{user?.displayName?.charAt(0).toUpperCase() || 'B'}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.searchBarWrapper}>
@@ -145,8 +157,12 @@ export default function BuyerDashboardScreen({ navigation }) {
             <View style={styles.alertBox}>
               <Text style={styles.alertEmoji}>💳</Text>
               <View style={styles.alertContent}>
-                <Text style={styles.alertTitle}>Action Required: {stats.pendingPayments.length} Payment(s)</Text>
-                <Text style={styles.alertMessage}>Please pay the 30% advance to finalize your contract for {stats.pendingPayments[0].cropName}.</Text>
+                <Text style={styles.alertTitle}>
+                  {t('actionRequired') || 'Action Required'}: {stats.pendingPayments.length} {t('payments') || 'Payment(s)'}
+                </Text>
+                <Text style={styles.alertMessage}>
+                  {t('payAdvanceReminder') || 'Please pay the 30% advance to finalize your contract for'} {stats.pendingPayments[0].cropName}.
+                </Text>
                 <TouchableOpacity 
                   style={styles.alertButton} 
                   onPress={() => navigation.navigate('Payment', { 
@@ -155,7 +171,7 @@ export default function BuyerDashboardScreen({ navigation }) {
                     type: 'advance'
                   })}
                 >
-                  <Text style={styles.alertButtonText}>Pay Advance Now</Text>
+                  <Text style={styles.alertButtonText}>{t('payAdvanceNow') || 'Pay Advance Now'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -205,9 +221,9 @@ export default function BuyerDashboardScreen({ navigation }) {
               style={[styles.featuredCard, { backgroundColor: colors.card }]}
               onPress={() => navigation.navigate('CropDetail', { cropId: crop.id })}
             >
-              <Image source={{ uri: crop.images[0] }} style={styles.featuredImage} />
+              <Image source={{ uri: crop.images?.[0] }} style={styles.featuredImage} />
               <View style={styles.featuredBadge}>
-                <Text style={styles.featuredBadgeText}>New</Text>
+                <Text style={styles.featuredBadgeText}>{t('newLabel') || 'New'}</Text>
               </View>
               <View style={styles.featuredInfo}>
                 <Text style={[styles.featuredName, { color: colors.text }]} numberOfLines={1}>{crop.name}</Text>
@@ -228,7 +244,13 @@ export default function BuyerDashboardScreen({ navigation }) {
         <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
           <BarChart
             data={{
-              labels: ["Wht", "Rice", "Corn", "Soy", "Tea"],
+              labels: [
+                t('cropWheatShort') || 'Wht',
+                t('cropRiceShort') || 'Rice',
+                t('cropCornShort') || 'Corn',
+                t('cropSoyShort') || 'Soy',
+                t('cropTeaShort') || 'Tea'
+              ],
               datasets: [{
                 data: [
                   Math.max(20, stats.totalSpent * 0.02),

@@ -5,10 +5,14 @@ import {
   StyleSheet,
   TouchableOpacity
 } from 'react-native';
+
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+
 
 export default function BottomTabBar({ state, descriptors, navigation }) {
   const { userRole } = useAuth();
+  const { t } = useLanguage();
 
   const getIcon = (routeName, isFocused) => {
     const icons = {
@@ -25,15 +29,17 @@ export default function BottomTabBar({ state, descriptors, navigation }) {
 
   const getLabel = (routeName) => {
     const labels = {
-      Dashboard: 'Home',
-      Marketplace: 'Market',
-      Contracts: 'Contracts',
-      Payments: 'Payments',
-      Profile: 'Profile',
-      MyCrops: 'My Crops',
-      History: 'History'
+      Dashboard: t('home'),
+      Marketplace: t('market'),
+      Contracts: t('contracts'),
+      Payments: t('payments'),
+      Profile: t('profile'),
+      MyCrops: t('crops'),
+      History: t('history'),
+      Chat: t('chat'),
+      Notifications: t('notifications'),
     };
-    return labels[routeName] || routeName;
+    return labels[routeName] || t(routeName) || routeName;
   };
 
   return (

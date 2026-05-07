@@ -26,6 +26,13 @@ export default function BuyerPaymentsScreen({ navigation }) {
     advancePaid: 0
   });
 
+  const formatDateSafe = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString();
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       if (!user?.uid) return;
@@ -105,7 +112,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
   };
 
   const getPaymentTypeText = (type) => {
-    return type === 'advance' ? 'Advance Payment (30%)' : 'Remaining Payment (70%)';
+    return type === 'advance' ? (t('advancePaymentLabel') || 'Advance Payment (30%)') : (t('remainingPaymentLabel') || 'Remaining Payment (70%)');
   };
 
   const getStatusColor = (status) => {
@@ -120,7 +127,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
   const renderPayment = ({ item }) => (
     <View style={[styles.paymentCard, { backgroundColor: colors.card }]}>
       <View style={[styles.paymentHeader, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.contractId, { color: colors.textSecondary }]}>Contract #{item.contractId.slice(-6)}</Text>
+        <Text style={[styles.contractId, { color: colors.textSecondary }]}>{t('contract') || 'Contract'} #{item.contractId.slice(-6)}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
           <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
         </View>
@@ -129,9 +136,13 @@ export default function BuyerPaymentsScreen({ navigation }) {
       <View style={styles.paymentDetails}>
         <Text style={[styles.cropName, { color: colors.text }]}>🌾 {item.cropName}</Text>
         <Text style={[styles.farmerName, { color: colors.textSecondary }]}>👨‍🌾 {item.farmerName}</Text>
-        <Text style={styles.amount}>💰 Amount: ₹{item.amount}</Text>
-        <Text style={[styles.paymentType, { color: colors.textSecondary }]}>💳 Type: {getPaymentTypeText(item.type)}</Text>
-        <Text style={[styles.date, { color: colors.textSecondary }]}>📅 Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+        <Text style={styles.amount}>💰 {t('amount') || 'Amount'}: ₹{item.amount}</Text>
+        <Text style={[styles.paymentType, { color: colors.textSecondary }]}>💳 {t('type') || 'Type'}: {getPaymentTypeText(item.type)}</Text>
+        {formatDateSafe(item.dueDate) ? (
+          <Text style={[styles.date, { color: colors.textSecondary }]}>📅 {t('due') || 'Due'}: {formatDateSafe(item.dueDate)}</Text>
+        ) : formatDateSafe(item.paidAt) ? (
+          <Text style={[styles.date, { color: colors.textSecondary }]}>📅 {t('paid') || 'Paid'}: {formatDateSafe(item.paidAt)}</Text>
+        ) : null}
       </View>
 
       {item.status === 'pending' && (
@@ -139,14 +150,14 @@ export default function BuyerPaymentsScreen({ navigation }) {
           style={styles.payButton}
           onPress={() => handlePayNow(item)}
         >
-          <Text style={styles.payButtonText}>Pay Now</Text>
+          <Text style={styles.payButtonText}>{t('payNow') || 'Pay Now'}</Text>
         </TouchableOpacity>
       )}
 
       {item.status === 'paid' && (
         <View style={styles.receiptContainer}>
-          <Text style={styles.receiptText}>✓ Payment Completed</Text>
-          <Text style={styles.transactionId}>TX ID: {item.transactionId}</Text>
+          <Text style={styles.receiptText}>✓ {t('paymentCompleted') || 'Payment Completed'}</Text>
+          <Text style={styles.transactionId}>{t('transactionId') || 'TX ID'}: {item.transactionId}</Text>
         </View>
       )}
     </View>
@@ -166,15 +177,15 @@ export default function BuyerPaymentsScreen({ navigation }) {
       <View style={[styles.summaryContainer, { backgroundColor: colors.card }]}>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: colors.text }]}>₹{summary.totalPaid}</Text>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Paid</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('totalPaid') || 'Total Paid'}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#f44336' }]}>₹{summary.pendingPayments}</Text>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Pending</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('pending') || 'Pending'}</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={[styles.summaryValue, { color: '#FF9800' }]}>₹{summary.advancePaid}</Text>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Advance Paid</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{t('advancePaid') || 'Advance Paid'}</Text>
         </View>
       </View>
 
@@ -184,7 +195,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No payment records found</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noPaymentRecords') || 'No payment records found'}</Text>
           </View>
         }
       />

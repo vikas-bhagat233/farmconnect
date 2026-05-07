@@ -13,9 +13,11 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { updateCrop } from '../../services/firestoreService';
 import { uploadToCloudinary } from '../../services/cloudinaryService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function EditCropScreen({ navigation, route }) {
   const { cropId, cropData } = route.params;
+  const { t } = useLanguage();
   const [crop, setCrop] = useState({
     name: cropData.name,
     category: cropData.category,
@@ -51,7 +53,7 @@ export default function EditCropScreen({ navigation, route }) {
 
   const handleSubmit = async () => {
     if (!crop.name || !crop.quantity || !crop.price) {
-      Alert.alert('Error', 'Please fill all required fields');
+      Alert.alert(t('error') || 'Error', t('fillRequiredFields') || 'Please fill all required fields');
       return;
     }
 
@@ -76,10 +78,10 @@ export default function EditCropScreen({ navigation, route }) {
     setLoading(false);
 
     if (result.success) {
-      Alert.alert('Success', 'Crop updated successfully');
+      Alert.alert(t('success') || 'Success', t('cropUpdatedSuccessfully') || 'Crop updated successfully');
       navigation.goBack();
     } else {
-      Alert.alert('Error', result.error);
+      Alert.alert(t('error') || 'Error', result.error);
     }
   };
 
@@ -88,21 +90,21 @@ export default function EditCropScreen({ navigation, route }) {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Crop Name *"
+          placeholder={t('cropNameRequired') || 'Crop Name *'}
           value={crop.name}
           onChangeText={(text) => setCrop({...crop, name: text})}
         />
 
         <TextInput
           style={styles.input}
-          placeholder="Category"
+          placeholder={t('category') || 'Category'}
           value={crop.category}
           onChangeText={(text) => setCrop({...crop, category: text})}
         />
 
         <TextInput
           style={styles.input}
-          placeholder="Quantity (in kg) *"
+          placeholder={t('quantityRequiredKg') || 'Quantity (in kg) *'}
           value={crop.quantity}
           onChangeText={(text) => setCrop({...crop, quantity: text})}
           keyboardType="numeric"
@@ -110,7 +112,7 @@ export default function EditCropScreen({ navigation, route }) {
 
         <TextInput
           style={styles.input}
-          placeholder="Price per kg (₹) *"
+          placeholder={t('pricePerKgRequired') || 'Price per kg (₹) *'}
           value={crop.price}
           onChangeText={(text) => setCrop({...crop, price: text})}
           keyboardType="numeric"
@@ -118,7 +120,7 @@ export default function EditCropScreen({ navigation, route }) {
 
         <TextInput
           style={styles.textArea}
-          placeholder="Description"
+          placeholder={t('description') || 'Description'}
           value={crop.description}
           onChangeText={(text) => setCrop({...crop, description: text})}
           multiline
@@ -127,13 +129,13 @@ export default function EditCropScreen({ navigation, route }) {
 
         <TextInput
           style={styles.input}
-          placeholder="Location"
+          placeholder={t('location') || 'Location'}
           value={crop.location}
           onChangeText={(text) => setCrop({...crop, location: text})}
         />
 
         {/* Existing Images */}
-        <Text style={styles.imageLabel}>Current Images</Text>
+        <Text style={styles.imageLabel}>{t('currentImages') || 'Current Images'}</Text>
         <ScrollView horizontal style={styles.imageList}>
           {images.map((img, idx) => (
             <View key={idx} style={styles.imageContainer}>
@@ -151,7 +153,7 @@ export default function EditCropScreen({ navigation, route }) {
         {/* New Images */}
         {newImages.length > 0 && (
           <>
-            <Text style={styles.imageLabel}>New Images</Text>
+            <Text style={styles.imageLabel}>{t('newImages') || 'New Images'}</Text>
             <ScrollView horizontal style={styles.imageList}>
               {newImages.map((img, idx) => (
                 <View key={idx} style={styles.imageContainer}>
@@ -169,7 +171,7 @@ export default function EditCropScreen({ navigation, route }) {
         )}
 
         <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
-          <Text style={styles.addImageButtonText}>+ Add More Images</Text>
+          <Text style={styles.addImageButtonText}>+ {t('addMoreImages') || 'Add More Images'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -180,7 +182,7 @@ export default function EditCropScreen({ navigation, route }) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.submitButtonText}>Update Crop</Text>
+            <Text style={styles.submitButtonText}>{t('updateCrop') || 'Update Crop'}</Text>
           )}
         </TouchableOpacity>
       </View>

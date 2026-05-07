@@ -35,12 +35,12 @@ export default function MyCropsScreen({ navigation }) {
 
   const handleDelete = (cropId) => {
     Alert.alert(
-      'Delete Crop',
-      'Are you sure you want to delete this crop?',
+      t('deleteCrop') || 'Delete Crop',
+      t('deleteCropPrompt') || 'Are you sure you want to delete this crop?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel') || 'Cancel', style: 'cancel' },
         { 
-          text: 'Delete', 
+          text: t('delete') || 'Delete', 
           style: 'destructive',
           onPress: async () => {
             await deleteCrop(cropId);
@@ -60,10 +60,10 @@ export default function MyCropsScreen({ navigation }) {
       <View style={styles.cropInfo}>
         <Text style={[styles.cropName, { color: colors.text }]}>{item.name}</Text>
         <Text style={styles.cropPrice}>₹{item.price}/kg</Text>
-        <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{item.quantity} kg available</Text>
+        <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{item.quantity} {t('kgAvailable') || 'kg available'}</Text>
         <View style={styles.statusBadge}>
           <Text style={styles.statusText}>
-            {item.contractId ? 'Under Contract' : 'Available'}
+            {item.contractId ? (t('underContract') || 'Under Contract') : (t('available') || 'Available')}
           </Text>
         </View>
       </View>
@@ -87,12 +87,12 @@ export default function MyCropsScreen({ navigation }) {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No crops added yet</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('noCropsAdded') || 'No crops added yet'}</Text>
             <TouchableOpacity 
               style={styles.addButton}
               onPress={() => navigation.navigate('AddCrop')}
             >
-              <Text style={styles.addButtonText}>Add Your First Crop</Text>
+              <Text style={styles.addButtonText}>{t('addFirstCrop') || 'Add Your First Crop'}</Text>
             </TouchableOpacity>
           </View>
         }

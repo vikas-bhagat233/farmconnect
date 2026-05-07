@@ -3,23 +3,20 @@ import axios from 'axios';
 // Mock weather data if API key is not available, but structured for real use
 export const getWeatherData = async (lat, lon) => {
   try {
-    // If you have an OpenWeatherMap API key, use it here:
-    // const API_KEY = 'YOUR_API_KEY';
-    // const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`);
-    // return response.data;
-
-    // Premium Mock Data for demonstration
+    const API_KEY = 'bd97dc79c0609c3fe173fc85fc29eaaa';
+    const response = await axios.get(
+      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
+    );
+    const data = response.data;
+    // Map OpenWeatherMap data to your UI structure
     return {
-      temp: 28,
-      condition: 'Sunny',
-      humidity: 45,
-      windSpeed: 12,
+      temp: Math.round(data.main.temp),
+      condition: data.weather[0].main,
+      humidity: data.main.humidity,
+      windSpeed: data.wind.speed,
+      // No forecast in current endpoint, so just show today
       forecast: [
-        { day: 'Mon', temp: 28, icon: '☀️' },
-        { day: 'Tue', temp: 30, icon: '☀️' },
-        { day: 'Wed', temp: 26, icon: '⛅' },
-        { day: 'Thu', temp: 25, icon: '🌧️' },
-        { day: 'Fri', temp: 27, icon: '☀️' },
+        { day: new Date().toLocaleDateString('en-US', { weekday: 'short' }), temp: Math.round(data.main.temp), icon: '☀️' }
       ]
     };
   } catch (error) {

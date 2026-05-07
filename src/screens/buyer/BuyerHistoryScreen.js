@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { getBuyerHistory } from '../../services/firestoreService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function BuyerHistoryScreen({ navigation }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -44,7 +46,7 @@ export default function BuyerHistoryScreen({ navigation }) {
     >
       <View style={styles.historyHeader}>
         <Text style={styles.historyType}>
-          {item.type === 'contract' ? '📄 Contract' : '💰 Payment'}
+          {item.type === 'contract' ? `📄 ${t('contract') || 'Contract'}` : `💰 ${t('payments') || 'Payment'}`}
         </Text>
         <Text style={styles.historyDate}>
           {new Date(item.date).toLocaleDateString()}
@@ -55,10 +57,10 @@ export default function BuyerHistoryScreen({ navigation }) {
         <Text style={styles.historyTitle}>{item.title}</Text>
         <Text style={styles.historyDescription}>{item.description}</Text>
         {item.amount && (
-          <Text style={styles.historyAmount}>Amount: ₹{item.amount}</Text>
+          <Text style={styles.historyAmount}>{t('amount') || 'Amount'}: ₹{item.amount}</Text>
         )}
         <View style={[styles.statusBadge, { backgroundColor: item.status === 'completed' ? '#4CAF50' : '#FFC107' }]}>
-          <Text style={styles.statusText}>{item.status}</Text>
+          <Text style={styles.statusText}>{t(item.status) || item.status}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -80,19 +82,19 @@ export default function BuyerHistoryScreen({ navigation }) {
           style={[styles.filterTab, filter === 'all' && styles.activeFilter]}
           onPress={() => setFilter('all')}
         >
-          <Text style={[styles.filterText, filter === 'all' && styles.activeFilterText]}>All</Text>
+          <Text style={[styles.filterText, filter === 'all' && styles.activeFilterText]}>{t('all') || 'All'}</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.filterTab, filter === 'contract' && styles.activeFilter]}
           onPress={() => setFilter('contract')}
         >
-          <Text style={[styles.filterText, filter === 'contract' && styles.activeFilterText]}>Contracts</Text>
+          <Text style={[styles.filterText, filter === 'contract' && styles.activeFilterText]}>{t('contracts') || 'Contracts'}</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.filterTab, filter === 'payment' && styles.activeFilter]}
           onPress={() => setFilter('payment')}
         >
-          <Text style={[styles.filterText, filter === 'payment' && styles.activeFilterText]}>Payments</Text>
+          <Text style={[styles.filterText, filter === 'payment' && styles.activeFilterText]}>{t('payments') || 'Payments'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -102,7 +104,7 @@ export default function BuyerHistoryScreen({ navigation }) {
         keyExtractor={(item, index) => index.toString()}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No history found</Text>
+            <Text style={styles.emptyText}>{t('noHistoryFound') || 'No history found'}</Text>
           </View>
         }
       />

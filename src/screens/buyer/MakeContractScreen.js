@@ -13,6 +13,7 @@ import {
 // import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getCropById } from '../../services/cropService';
 import { getFarmerById } from '../../services/firestoreService';
 import { createContract } from '../../services/contractService';
@@ -27,13 +28,15 @@ export default function MakeContractScreen({ navigation, route }) {
   } = route.params;
   
   const { colors, isDark } = useTheme();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
+  const { t } = useLanguage();
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [crop, setCrop] = useState(null);
   const [farmer, setFarmer] = useState(null);
   const [deliveryDate, setDeliveryDate] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [deliveryLocation, setDeliveryLocation] = useState('');
   const [advanceAmount, setAdvanceAmount] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -45,6 +48,13 @@ export default function MakeContractScreen({ navigation, route }) {
     setAdvanceAmount(initialAdvance.toString());
   }, []);
 
+  // Farmers should never land here — redirect back silently
+  useEffect(() => {
+    if (userRole && userRole !== 'buyer') {
+      navigation.goBack();
+    }
+  }, [userRole]);
+
   const loadData = async () => {
     try {
       const [cropData, farmerData] = await Promise.all([
@@ -54,25 +64,34 @@ export default function MakeContractScreen({ navigation, route }) {
       setCrop(cropData);
       setFarmer(farmerData);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load details');
+      Alert.alert(t('error') || 'Error', t('failedToLoadDetails') || 'Failed to load details');
     }
     setLoading(false);
   };
 
   const handleCreateContract = async () => {
+    if (!user?.uid) {
+      Alert.alert(t('error') || 'Error', t('loginToCreateContract') || 'You must be logged in to create a contract.');
+      return;
+    }
     if (!deliveryDate || !/^\d{4}-\d{2}-\d{2}$/.test(deliveryDate)) {
-      Alert.alert('Error', 'Please enter delivery date in YYYY-MM-DD format');
+      Alert.alert(t('error') || 'Error', t('enterDeliveryDate') || 'Please enter delivery date in YYYY-MM-DD format');
+      return;
+    }
+
+    if (!deliveryLocation.trim()) {
+      Alert.alert(t('error') || 'Error', t('enterDeliveryLocation') || 'Please enter delivery location');
       return;
     }
 
     if (!advanceAmount) {
-      Alert.alert('Error', 'Please enter advance amount');
+      Alert.alert(t('error') || 'Error', t('enterAdvanceAmount') || 'Please enter advance amount');
       return;
     }
 
     const advance = parseFloat(advanceAmount);
     if (isNaN(advance) || advance < 0 || advance > totalAmount) {
-      Alert.alert('Error', 'Invalid advance amount');
+      Alert.alert(t('error') || 'Error', t('invalidAdvanceAmount') || 'Invalid advance amount');
       return;
     }
 
@@ -91,6 +110,7 @@ export default function MakeContractScreen({ navigation, route }) {
         advanceAmount: advance,
         remainingAmount: totalAmount - advance,
         deliveryDate: new Date(deliveryDate).toISOString(),
+        deliveryLocation: deliveryLocation.trim(),
         notes,
         negotiationId,
         status: 'pending', 
@@ -101,15 +121,22 @@ export default function MakeContractScreen({ navigation, route }) {
       
       if (result.success) {
         Alert.alert(
-          'Contract Created', 
-          'Your contract proposal has been sent to the farmer and a negotiation record has been updated.', 
+          t('contractCreated') || 'Contract Created',
+          t('contractSentForApproval') || 'Your contract proposal has been sent to the farmer for approval.',
           [
-            { 
-              text: 'OK', 
-              onPress: () => navigation.reset({
-                index: 0,
-                routes: [{ name: 'Main', params: { screen: 'Contracts' } }],
-              }) 
+            {
+              text: t('viewContracts') || 'View Contracts',
+              onPress: () => {
+                // Navigate to Main first, then to the Contracts tab
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Main' }],
+                });
+                // Use a small delay to let the navigator settle before switching tab
+                setTimeout(() => {
+                  navigation.navigate('Main', { screen: 'Contracts' });
+                }, 100);
+              }
             }
           ]
         );
@@ -117,7 +144,7 @@ export default function MakeContractScreen({ navigation, route }) {
         throw new Error(result.error);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to create contract: ' + error.message);
+      Alert.alert(t('error') || 'Error', (t('failedToCreateContract') || 'Failed to create contract: ') + error.message);
     }
     setSubmitting(false);
   };
@@ -133,62 +160,71 @@ export default function MakeContractScreen({ navigation, route }) {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.card, { backgroundColor: colors.card }]}>
-        <Text style={[styles.title, { color: colors.text }]}>Finalize Contract</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('finalizeContract') || 'Finalize Contract'}</Text>
         
         <View style={styles.summaryItem}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Crop</Text>
-          <Text style={[styles.value, { color: colors.text }]}>{crop?.name || 'Loading...'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>{t('crops') || 'Crop'}</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{crop?.name || (t('loading') || 'Loading...')}</Text>
         </View>
         
         <View style={styles.summaryItem}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Farmer</Text>
-          <Text style={[styles.value, { color: colors.text }]}>{farmer?.name || 'Loading...'}</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>{t('farmer') || 'Farmer'}</Text>
+          <Text style={[styles.value, { color: colors.text }]}>{farmer?.name || (t('loading') || 'Loading...')}</Text>
         </View>
         
         <View style={styles.divider} />
         
         <View style={styles.summaryItem}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Agreed Price</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>{t('agreedPrice') || 'Agreed Price'}</Text>
           <Text style={[styles.value, { color: colors.primary }]}>₹{agreedPrice}/kg</Text>
         </View>
         
         <View style={styles.summaryItem}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Quantity</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>{t('quantity') || 'Quantity'}</Text>
           <Text style={[styles.value, { color: colors.text }]}>{agreedQuantity} kg</Text>
         </View>
         
         <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
-          <Text style={[styles.totalLabel, { color: colors.text }]}>Total Amount</Text>
+          <Text style={[styles.totalLabel, { color: colors.text }]}>{t('totalAmount') || 'Total Amount'}</Text>
           <Text style={[styles.totalValue, { color: colors.primary }]}>₹{totalAmount}</Text>
         </View>
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.card }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Delivery & Payment</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('deliveryAndPayment') || 'Delivery & Payment'}</Text>
         
-        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Expected Delivery Date (YYYY-MM-DD)</Text>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('expectedDeliveryDate') || 'Expected Delivery Date (YYYY-MM-DD)'}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
-          placeholder="YYYY-MM-DD"
+          placeholder={t('dateFormatPlaceholder') || 'YYYY-MM-DD'}
           placeholderTextColor={colors.textSecondary}
           value={deliveryDate}
           onChangeText={setDeliveryDate}
         />
 
-        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Advance Payment (30% Auto-calculated)</Text>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('deliveryLocation') || 'Delivery Location'}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
-          placeholder="Enter amount to pay now"
+          placeholder={t('enterDeliveryLocationPlaceholder') || 'Enter delivery location'}
+          placeholderTextColor={colors.textSecondary}
+          value={deliveryLocation}
+          onChangeText={setDeliveryLocation}
+        />
+
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('advancePaymentAuto') || 'Advance Payment (30% Auto-calculated)'}</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
+          placeholder={t('enterAmountToPayNow') || 'Enter amount to pay now'}
           placeholderTextColor={colors.textSecondary}
           value={advanceAmount}
           onChangeText={setAdvanceAmount}
           keyboardType="numeric"
         />
 
-        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Additional Notes</Text>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('additionalNotes') || 'Additional Notes'}</Text>
         <TextInput
           style={[styles.textArea, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
-          placeholder="Any specific delivery instructions..."
+          placeholder={t('deliveryInstructionsPlaceholder') || 'Any specific delivery instructions...'}
           placeholderTextColor={colors.textSecondary}
           value={notes}
           onChangeText={setNotes}
@@ -205,7 +241,7 @@ export default function MakeContractScreen({ navigation, route }) {
         {submitting ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.submitButtonText}>Send Contract Proposal</Text>
+          <Text style={styles.submitButtonText}>{t('sendContractProposal') || 'Send Contract Proposal'}</Text>
         )}
       </TouchableOpacity>
       <View style={{ height: 40 }} />

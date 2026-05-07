@@ -15,6 +15,7 @@ import * as Notifications from 'expo-notifications';
 
 export const sendNotification = async (userId, title, body, data = {}) => {
   try {
+    // Save notification to Firestore — the recipient reads it from their device
     const notificationRef = doc(collection(db, 'notifications'));
     await setDoc(notificationRef, {
       userId,
@@ -25,18 +26,15 @@ export const sendNotification = async (userId, title, body, data = {}) => {
       createdAt: new Date().toISOString(),
       type: data.type || 'general'
     });
-    
-    // Send push notification
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        data,
-        sound: true,
-      },
-      trigger: null,
-    });
-    
+
+    // Only schedule a local push notification if this notification is FOR the
+    // currently logged-in user on this device. We cannot send push to other
+    // devices from the client — that requires a backend with FCM tokens.
+    // Scheduling for a different userId here would show the notification on
+    // the wrong device (the sender's phone), which is the bug being fixed.
+    // The recipient will see their notifications when they open the app via
+    // the Notifications screen which reads from Firestore by userId.
+
     return { success: true };
   } catch (error) {
     console.error('Notification error:', error);

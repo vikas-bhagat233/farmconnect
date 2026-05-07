@@ -25,19 +25,19 @@ export default function SettingsScreen({ navigation }) {
 
   const handleLanguageChange = (langCode) => {
     setLanguage(langCode);
-    Alert.alert('Language Changed', `App language changed to ${languages.find(l => l.code === langCode)?.name}`);
+    Alert.alert(t('languageChanged') || 'Language Changed', `${t('appLanguageChangedTo') || 'App language changed to'} ${languages.find(l => l.code === langCode)?.name}`);
   };
 
   const handleClearCache = () => {
     Alert.alert(
-      'Clear Cache',
-      'Are you sure you want to clear app cache?',
+      t('clearCache') || 'Clear Cache',
+      t('clearCachePrompt') || 'Are you sure you want to clear app cache?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel') || 'Cancel', style: 'cancel' },
         { 
-          text: 'Clear', 
+          text: t('clear') || 'Clear', 
           style: 'destructive',
-          onPress: () => Alert.alert('Success', 'Cache cleared successfully')
+          onPress: () => Alert.alert(t('success') || 'Success', t('cacheCleared') || 'Cache cleared successfully')
         }
       ]
     );
@@ -85,7 +85,7 @@ export default function SettingsScreen({ navigation }) {
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('notifications')}</Text>
         <View style={styles.settingItem}>
-          <Text style={[styles.settingLabel, { color: colors.text }]}>Push Notifications</Text>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{t('pushNotifications') || 'Push Notifications'}</Text>
           <Switch
             value={notifications}
             onValueChange={setNotifications}
@@ -93,7 +93,7 @@ export default function SettingsScreen({ navigation }) {
           />
         </View>
         <View style={styles.settingItem}>
-          <Text style={[styles.settingLabel, { color: colors.text }]}>Sound</Text>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{t('sound') || 'Sound'}</Text>
           <Switch
             value={soundEnabled}
             onValueChange={setSoundEnabled}
@@ -105,11 +105,11 @@ export default function SettingsScreen({ navigation }) {
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('support')}</Text>
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleReportIssue}>
-          <Text style={[styles.menuItemText, { color: colors.text }]}>Report an Issue</Text>
+          <Text style={[styles.menuItemText, { color: colors.text }]}>{t('reportIssue') || 'Report an Issue'}</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={handleClearCache}>
-          <Text style={[styles.menuItemText, { color: colors.text }]}>Clear Cache</Text>
+          <Text style={[styles.menuItemText, { color: colors.text }]}>{t('clearCache') || 'Clear Cache'}</Text>
           <Text style={styles.arrow}>→</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]}>
@@ -125,9 +125,9 @@ export default function SettingsScreen({ navigation }) {
       <View style={[styles.section, { backgroundColor: colors.card }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('about')}</Text>
         <View style={styles.aboutItem}>
-          <Text style={[styles.appName, { color: colors.primary }]}>Farmer Buyer Contract</Text>
+          <Text style={[styles.appName, { color: colors.primary }]}>{t('appName') || 'Farmer Buyer Contract'}</Text>
           <Text style={[styles.appVersion, { color: colors.textSecondary }]}>{t('version')} 1.0.0</Text>
-          <Text style={[styles.copyright, { color: colors.textSecondary }]}>© 2024 All rights reserved</Text>
+          <Text style={[styles.copyright, { color: colors.textSecondary }]}>{t('allRightsReserved') || '© 2024 All rights reserved'}</Text>
         </View>
       </View>
     </ScrollView>

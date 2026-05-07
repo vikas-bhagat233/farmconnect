@@ -267,3 +267,54 @@ export const downloadContractPDF = async (contract) => {
   const pdfUrl = await generateContractPDF(contract);
   return pdfUrl;
 };
+
+export const markDeliveryCompleted = async (contractId) => {
+  try {
+    const contractRef = doc(db, 'contracts', contractId);
+    await updateDoc(contractRef, {
+      deliveryCompleted: true,
+      deliveryCompletedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const ensureRemainingPaymentRecord = async (contractId) => {
+  try {
+    const contract = await getContractById(contractId);
+    if (!contract) return { success: false, error: 'Contract not found' };
+
+    const paymentsQuery = query(
+      collection(db, 'payments'),
+      where('contractId', '==', contractId),
+      where('type', '==', 'remaining')
+    );
+    const snapshot = await getDocs(paymentsQuery);
+    if (!snapshot.empty) {
+      return { success: true, existing: true };
+    }
+
+    const paymentRef = doc(collection(db, 'payments'));
+    await setDoc(paymentRef, {
+      id: paymentRef.id,
+      contractId: contract.id,
+      buyerId: contract.buyerId,
+      buyerName: contract.buyerName,
+      farmerId: contract.farmerId,
+      farmerName: contract.farmerName,
+      cropName: contract.cropName,
+      amount: contract.remainingAmount,
+      type: 'remaining',
+      status: 'pending',
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date().toISOString()
+    });
+
+    return { success: true, created: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};

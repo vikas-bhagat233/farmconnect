@@ -43,8 +43,16 @@ export default function BuyerContractsScreen({ navigation }) {
         const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setContracts(sortedData);
         setLoading(false);
+        // Smart tab switching: always move to the most relevant tab
+        setActiveTab(prev => {
+          const hasPending = sortedData.some(c => c.status === 'pending');
+          const hasActive = sortedData.some(c => c.status === 'active' || c.status === 'accept');
+          if (prev === 'pending' && !hasPending && hasActive) return 'active';
+          if (prev === 'active' && !hasActive && hasPending) return 'pending';
+          return prev;
+        });
       }, (error) => {
-        console.error("Contracts listener failed:", error);
+        console.error("BuyerContracts onSnapshot error:", error.code, error.message);
         setLoading(false);
       });
 
@@ -78,9 +86,9 @@ export default function BuyerContractsScreen({ navigation }) {
   const handleDownloadPDF = async (contract) => {
     const pdfUrl = await downloadContractPDF(contract);
     if (pdfUrl) {
-      Alert.alert('Success', 'Contract PDF is ready', [
-        { text: 'Share', onPress: () => Share.share({ url: pdfUrl }) },
-        { text: 'OK' }
+      Alert.alert(t('success') || 'Success', t('contractPdfReady') || 'Contract PDF is ready', [
+        { text: t('share') || 'Share', onPress: () => Share.share({ url: pdfUrl }) },
+        { text: t('ok') || 'OK' }
       ]);
     }
   };
@@ -89,6 +97,11 @@ export default function BuyerContractsScreen({ navigation }) {
     navigation.navigate('Payment', {
       contractId: contract.id,
       amount: contract.advanceAmount,
+      farmerId: contract.farmerId,
+      farmerName: contract.farmerName,
+      cropName: contract.cropName,
+      buyerId: contract.buyerId,
+      buyerName: contract.buyerName,
       type: 'advance'
     });
   };
@@ -107,12 +120,12 @@ export default function BuyerContractsScreen({ navigation }) {
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'pending': return 'Pending Farmer Approval';
+      case 'pending': return t('pendingFarmerApproval') || 'Pending Farmer Approval';
       case 'active':
-      case 'accept': return 'Active';
-      case 'completed': return 'Completed';
-      case 'cancelled': return 'Cancelled';
-      case 'rejected': return 'Rejected';
+      case 'accept': return t('active') || 'Active';
+      case 'completed': return t('completed') || 'Completed';
+      case 'cancelled': return t('cancelled') || 'Cancelled';
+      case 'rejected': return t('rejected') || 'Rejected';
       default: return status;
     }
   };
@@ -138,10 +151,10 @@ export default function BuyerContractsScreen({ navigation }) {
 
       <View style={styles.contractDetails}>
         <Text style={[styles.cropName, { color: colors.text }]}>🌾 {item.cropName}</Text>
-        <Text style={[styles.details, { color: colors.textSecondary }]}>📦 Quantity: {item.quantity} kg</Text>
-        <Text style={[styles.details, { color: colors.textSecondary }]}>💰 Price: ₹{item.agreedPrice}/kg</Text>
-        <Text style={styles.totalAmount}>💵 Total: ₹{item.totalAmount}</Text>
-        <Text style={[styles.date, { color: colors.textSecondary }]}>📅 Created: {new Date(item.createdAt).toLocaleDateString()}</Text>
+        <Text style={[styles.details, { color: colors.textSecondary }]}>📦 {t('quantity') || 'Quantity'}: {item.quantity} kg</Text>
+        <Text style={[styles.details, { color: colors.textSecondary }]}>💰 {t('price') || 'Price'}: ₹{item.agreedPrice}/kg</Text>
+        <Text style={styles.totalAmount}>💵 {t('total') || 'Total'}: ₹{item.totalAmount}</Text>
+        <Text style={[styles.date, { color: colors.textSecondary }]}>📅 {t('created') || 'Created'}: {new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
 
       {(item.status === 'active' || item.status === 'accept') && (
@@ -149,23 +162,23 @@ export default function BuyerContractsScreen({ navigation }) {
           {!item.advancePaid ? (
             <View style={styles.paymentActionContainer}>
               <Text style={[styles.paymentText, { color: '#FF9800' }]}>
-                ⚠️ Advance Payment Required: ₹{item.advanceAmount}
+                ⚠️ {t('advancePaymentRequired') || 'Advance Payment Required'}: ₹{item.advanceAmount}
               </Text>
               <TouchableOpacity
                 style={[styles.payButton, { backgroundColor: colors.primary }]}
                 onPress={() => handleMakePayment(item)}
               >
-                <Text style={styles.payButtonText}>💰 Pay Advance Now</Text>
+                <Text style={styles.payButtonText}>💰 {t('payAdvanceNow') || 'Pay Advance Now'}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View>
               <Text style={[styles.paymentText, { color: '#4CAF50' }]}>
-                ✅ Advance Paid: ₹{item.advanceAmount} (30%)
+                ✅ {t('advancePaid') || 'Advance Paid'}: ₹{item.advanceAmount} (30%)
               </Text>
               {!item.fullPaid && (
                 <Text style={styles.remainingText}>
-                  Remaining: ₹{item.remainingAmount} (70% due on delivery)
+                  {t('remaining') || 'Remaining'}: ₹{item.remainingAmount} (70% {t('dueOnDelivery') || 'due on delivery'})
                 </Text>
               )}
             </View>
@@ -178,7 +191,7 @@ export default function BuyerContractsScreen({ navigation }) {
           style={styles.downloadButton}
           onPress={() => handleDownloadPDF(item)}
         >
-          <Text style={styles.downloadButtonText}>📄 Download Contract PDF</Text>
+          <Text style={styles.downloadButtonText}>📄 {t('downloadContractPdf') || 'Download Contract PDF'}</Text>
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -200,7 +213,7 @@ export default function BuyerContractsScreen({ navigation }) {
           onPress={() => setActiveTab('pending')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'pending' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Pending {contracts.filter(c => c.status === 'pending').length > 0 ? `(${contracts.filter(c => c.status === 'pending').length})` : ''}
+            {t('pending') || 'Pending'} {contracts.filter(c => c.status === 'pending').length > 0 ? `(${contracts.filter(c => c.status === 'pending').length})` : ''}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -208,7 +221,7 @@ export default function BuyerContractsScreen({ navigation }) {
           onPress={() => setActiveTab('active')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'active' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Active {contracts.filter(c => c.status === 'active' || c.status === 'accept').length > 0 ? `(${contracts.filter(c => c.status === 'active' || c.status === 'accept').length})` : ''}
+            {t('active') || 'Active'} {contracts.filter(c => c.status === 'active' || c.status === 'accept').length > 0 ? `(${contracts.filter(c => c.status === 'active' || c.status === 'accept').length})` : ''}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -216,7 +229,7 @@ export default function BuyerContractsScreen({ navigation }) {
           onPress={() => setActiveTab('completed')}
         >
           <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'completed' && { color: colors.primary, fontWeight: 'bold' }]}>
-            Completed {contracts.filter(c => c.status === 'completed').length > 0 ? `(${contracts.filter(c => c.status === 'completed').length})` : ''}
+            {t('completed') || 'Completed'} {contracts.filter(c => c.status === 'completed').length > 0 ? `(${contracts.filter(c => c.status === 'completed').length})` : ''}
           </Text>
         </TouchableOpacity>
       </View>
@@ -230,7 +243,22 @@ export default function BuyerContractsScreen({ navigation }) {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No {activeTab} contracts found</Text>
+            <Text style={{ fontSize: 40, marginBottom: 10 }}>
+              {activeTab === 'pending' ? '⏳' : activeTab === 'active' ? '📄' : '✅'}
+            </Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              No {activeTab} contracts
+            </Text>
+            {activeTab === 'pending' && contracts.some(c => c.status === 'active' || c.status === 'accept') && (
+              <TouchableOpacity onPress={() => setActiveTab('active')} style={{ marginTop: 12, backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 }}>
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>View Active Contracts →</Text>
+              </TouchableOpacity>
+            )}
+            {activeTab === 'active' && contracts.some(c => c.status === 'pending') && (
+              <TouchableOpacity onPress={() => setActiveTab('pending')} style={{ marginTop: 12, backgroundColor: '#FFC107', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 }}>
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>View Pending Contracts →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
       />

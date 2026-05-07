@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,22 +8,16 @@ import {
   RefreshControl,
   Alert
 } from 'react-native';
-import { getNotifications, markNotificationAsRead, deleteNotification } from '../../services/notificationService';
+import { deleteNotification } from '../../services/notificationService';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function NotificationScreen({ navigation }) {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState([]);
+  const { notifications, loadNotifications, markAsRead } = useNotification();
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    loadNotifications();
-  }, []);
-
-  const loadNotifications = async () => {
-    const data = await getNotifications(user.uid);
-    setNotifications(data);
-  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -32,32 +26,28 @@ export default function NotificationScreen({ navigation }) {
   };
 
   const handlePress = async (item) => {
-    await markNotificationAsRead(item.id);
-    if (item.type === 'contract' && item.contractId) {
+    await markAsRead(item.id);
+    if (item.data?.contractId) {
+      navigation.navigate('ContractDetails', { contractId: item.data.contractId });
+    } else if (item.type === 'contract' && item.contractId) {
       navigation.navigate('ContractDetails', { contractId: item.contractId });
-    } else if (item.type === 'message' && item.senderId) {
-      navigation.navigate('Chat', {
-        userId: item.senderId,
-        userName: item.senderName,
-        userRole: item.senderRole
-      });
-    } else if (item.type === 'payment' && item.contractId) {
-      navigation.navigate('Payment', { contractId: item.contractId });
+    } else if (item.type === 'payment' && item.data?.contractId) {
+      navigation.navigate('Payment', { contractId: item.data.contractId, type: 'advance' });
     }
   };
 
   const handleDelete = (id) => {
     Alert.alert(
-      'Delete Notification',
-      'Are you sure you want to delete this notification?',
+      t('deleteNotification') || 'Delete Notification',
+      t('confirmDelete') || 'Are you sure?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel') || 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('delete') || 'Delete',
           style: 'destructive',
           onPress: async () => {
             await deleteNotification(id);
-            loadNotifications();
+            // Real-time listener auto-updates the list
           }
         }
       ]
@@ -108,9 +98,9 @@ export default function NotificationScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyIcon}>🔔</Text>
-            <Text style={styles.emptyText}>No notifications</Text>
+            <Text style={styles.emptyText}>{t('noNotifications') || 'No notifications'}</Text>
             <Text style={styles.emptySubtext}>
-              You're all caught up!
+              {t('allCaughtUp') || "You're all caught up!"}
             </Text>
           </View>
         }

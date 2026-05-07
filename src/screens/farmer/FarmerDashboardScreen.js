@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useNotification } from '../../context/NotificationContext';
 import { getFarmerStats, getRecentCrops, subscribeToFarmerStats } from '../../services/firestoreService';
 import { getWeatherData } from '../../services/weatherService';
 import ChatbotModal from '../../components/chatbot/ChatbotModal';
@@ -25,6 +26,7 @@ export default function FarmerDashboardScreen({ navigation }) {
   const { user } = useAuth();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
+  const { unreadCount } = useNotification();
   const [stats, setStats] = useState({
     totalCrops: 0,
     activeContracts: 0,
@@ -89,15 +91,25 @@ export default function FarmerDashboardScreen({ navigation }) {
           <Text style={[styles.welcomeText, { color: colors.text }]}>{t('welcome')}, {user?.displayName || (t('farmer') || 'Farmer')}</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-          {user?.photoURL ? (
-            <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
-          ) : (
-            <View style={[styles.profileImage, { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }]}>
-              <Text style={{ fontSize: 20, color: '#fff' }}>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'F'}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={{ position: 'relative', marginRight: 12 }}>
+            <Text style={{ fontSize: 26 }}>🔔</Text>
+            {unreadCount > 0 && (
+              <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#f44336', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 }}>
+                <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>{unreadCount > 99 ? '99+' : String(unreadCount)}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+            {user?.photoURL ? (
+              <Image source={{ uri: user.photoURL }} style={styles.profileImage} />
+            ) : (
+              <View style={[styles.profileImage, { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ fontSize: 20, color: '#fff' }}>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'F'}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Search Bar */}
@@ -152,7 +164,14 @@ export default function FarmerDashboardScreen({ navigation }) {
         <Text style={[styles.sectionTitle, { color: colors.text, marginLeft: 0 }]}>{t('earningsOverview')}</Text>
         <LineChart
           data={{
-            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+            labels: [
+              t('monthJanShort') || 'Jan',
+              t('monthFebShort') || 'Feb',
+              t('monthMarShort') || 'Mar',
+              t('monthAprShort') || 'Apr',
+              t('monthMayShort') || 'May',
+              t('monthJunShort') || 'Jun'
+            ],
             datasets: [{
               data: [
                 Math.random() * 5000,
@@ -204,7 +223,7 @@ export default function FarmerDashboardScreen({ navigation }) {
           <View style={styles.cropInfo}>
             <Text style={[styles.cropName, { color: colors.text }]}>{crop.name}</Text>
             <Text style={styles.cropPrice}>₹{crop.price}/kg</Text>
-            <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{crop.quantity} kg available</Text>
+            <Text style={[styles.cropQuantity, { color: colors.textSecondary }]}>{crop.quantity} {t('kgAvailable') || 'kg available'}</Text>
           </View>
         </TouchableOpacity>
       ))}
