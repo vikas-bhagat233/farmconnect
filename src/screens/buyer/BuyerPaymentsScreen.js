@@ -54,7 +54,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
         let advancePaid = 0;
 
         sortedData.forEach(payment => {
-          if (payment.status === 'paid') {
+          if (payment.status === 'paid' || payment.status === 'received' || payment.status === 'advance_paid') {
             totalPaid += payment.amount;
             if (payment.type === 'advance') advancePaid += payment.amount;
           } else if (payment.status === 'pending') {
@@ -92,7 +92,7 @@ export default function BuyerPaymentsScreen({ navigation }) {
     let advancePaid = 0;
 
     paymentsData.forEach(payment => {
-      if (payment.status === 'paid') {
+          if (payment.status === 'paid' || payment.status === 'received' || payment.status === 'advance_paid') {
         totalPaid += payment.amount;
         if (payment.type === 'advance') advancePaid += payment.amount;
       } else if (payment.status === 'pending') {
@@ -118,6 +118,8 @@ export default function BuyerPaymentsScreen({ navigation }) {
   const getStatusColor = (status) => {
     switch (status) {
       case 'paid': return '#4CAF50';
+      case 'received': return '#4CAF50';
+      case 'advance_paid': return '#4CAF50';
       case 'pending': return '#f44336';
       case 'processing': return '#FFC107';
       default: return '#999';
@@ -154,10 +156,10 @@ export default function BuyerPaymentsScreen({ navigation }) {
         </TouchableOpacity>
       )}
 
-      {item.status === 'paid' && (
+      {(item.status === 'paid' || item.status === 'received' || item.status === 'advance_paid') && (
         <View style={styles.receiptContainer}>
           <Text style={styles.receiptText}>✓ {t('paymentCompleted') || 'Payment Completed'}</Text>
-          <Text style={styles.transactionId}>{t('transactionId') || 'TX ID'}: {item.transactionId}</Text>
+          {item.transactionId && <Text style={styles.transactionId}>{t('transactionId') || 'TX ID'}: {item.transactionId}</Text>}
         </View>
       )}
     </View>

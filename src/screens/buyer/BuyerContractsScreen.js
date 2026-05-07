@@ -9,7 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Share,
-  RefreshControl
+  RefreshControl,
+  TextInput
 } from 'react-native';
 import { getBuyerContracts, updateContractStatus, downloadContractPDF } from '../../services/contractService';
 import { useAuth } from '../../context/AuthContext';
@@ -25,6 +26,7 @@ export default function BuyerContractsScreen({ navigation }) {
   // Default to 'pending' so buyer sees new contracts right away
   const [activeTab, setActiveTab] = useState('pending');
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // useFocusEffect must be called unconditionally (no early return before hooks)
   useFocusEffect(
@@ -131,10 +133,19 @@ export default function BuyerContractsScreen({ navigation }) {
   };
 
   const filteredContracts = contracts.filter(c => {
-    if (activeTab === 'pending') return c.status === 'pending';
-    if (activeTab === 'active') return c.status === 'active' || c.status === 'accept';
-    if (activeTab === 'completed') return c.status === 'completed';
-    return true;
+    let match = true;
+    if (activeTab === 'pending') match = c.status === 'pending';
+    else if (activeTab === 'active') match = c.status === 'active' || c.status === 'accept';
+    else if (activeTab === 'completed') match = c.status === 'completed';
+    else match = true;
+
+    if (match && activeTab === 'completed' && searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      match = (c.cropName?.toLowerCase().includes(q)) ||
+              (c.farmerName?.toLowerCase().includes(q)) ||
+              (c.id?.toLowerCase().includes(q));
+    }
+    return match;
   });
 
   const renderContract = ({ item }) => (
@@ -234,6 +245,18 @@ export default function BuyerContractsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {activeTab === 'completed' && (
+        <View style={[styles.searchContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <TextInput
+            style={[styles.searchInput, { backgroundColor: '#f0f0f0', color: colors.text }]}
+            placeholder={t('searchCompletedContracts') || 'Search by crop, farmer, or ID...'}
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      )}
+
       <FlatList
         data={filteredContracts}
         renderItem={renderContract}
@@ -280,6 +303,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#fff',
     paddingVertical: 10,
+  },
+  searchContainer: {
+    padding: 10,
+    borderBottomWidth: 1,
+  },
+  searchInput: {
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
   },
   tab: {
     flex: 1,

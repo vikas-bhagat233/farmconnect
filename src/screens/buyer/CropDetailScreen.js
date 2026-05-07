@@ -221,7 +221,12 @@ export default function CropDetailScreen({ navigation, route }) {
           
           <TouchableOpacity 
             style={styles.contractButton}
-            onPress={() => navigation.navigate('MakeContract', { cropId: crop.id })}
+            onPress={() => navigation.navigate('MakeContract', { 
+              cropId: crop.id,
+              farmerId: crop.farmerId,
+              agreedPrice: crop.price,
+              agreedQuantity: crop.quantity
+            })}
           >
             <Text style={styles.contractButtonText}>📄 {t('makeContract') || 'Make Contract'}</Text>
           </TouchableOpacity>

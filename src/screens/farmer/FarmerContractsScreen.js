@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  TextInput
 } from 'react-native';
-import { getFarmerContracts, updateContractStatus } from '../../services/contractService';
+import { getFarmerContracts, updateContractStatus, completeContractPayment } from '../../services/contractService';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -23,6 +24,7 @@ export default function FarmerContractsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // useFocusEffect must be called unconditionally (no early return before hooks)
   useFocusEffect(
@@ -104,6 +106,27 @@ export default function FarmerContractsScreen({ navigation }) {
     );
   };
 
+  const handleMarkPaymentReceived = (contractId) => {
+    Alert.alert(
+      t('confirmPayment') || 'Confirm Payment',
+      t('confirmPaymentPrompt') || 'Have you received the full remaining payment? This will mark the contract as completed.',
+      [
+        { text: t('cancel') || 'Cancel', style: 'cancel' },
+        {
+          text: t('confirm') || 'Confirm',
+          onPress: async () => {
+            const result = await completeContractPayment(contractId);
+            if (result.success) {
+              Alert.alert(t('success') || 'Success', t('contractCompleted') || 'Contract is now marked as completed!');
+            } else {
+              Alert.alert(t('error') || 'Error', result.error);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return '#FFC107';
@@ -115,10 +138,19 @@ export default function FarmerContractsScreen({ navigation }) {
   };
 
   const filteredContracts = contracts.filter(c => {
-    if (activeTab === 'pending') return c.status === 'pending';
-    if (activeTab === 'active') return c.status === 'active' || c.status === 'accept';
-    if (activeTab === 'completed') return c.status === 'completed';
-    return true;
+    let match = true;
+    if (activeTab === 'pending') match = c.status === 'pending';
+    else if (activeTab === 'active') match = c.status === 'active' || c.status === 'accept';
+    else if (activeTab === 'completed') match = c.status === 'completed';
+    else match = true;
+
+    if (match && activeTab === 'completed' && searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      match = (c.cropName?.toLowerCase().includes(q)) ||
+              (c.buyerName?.toLowerCase().includes(q)) ||
+              (c.id?.toLowerCase().includes(q));
+    }
+    return match;
   });
 
   const renderContract = ({ item }) => (
@@ -170,10 +202,18 @@ export default function FarmerContractsScreen({ navigation }) {
               ✅ {t('advanceReceivedPrepare') || 'Advance Received! Prepare for delivery of'} {item.quantity}kg.
             </Text>
           )}
-          {item.advancePaid && (
-            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 5 }}>
-              {t('remaining') || 'Remaining'}: ₹{item.remainingAmount} ({t('dueOnDelivery') || 'Due on delivery'})
-            </Text>
+          {item.advancePaid && !item.fullPaid && (
+            <View>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 5, marginBottom: 10 }}>
+                {t('remaining') || 'Remaining'}: ₹{item.remainingAmount} ({t('dueOnDelivery') || 'Due on delivery'})
+              </Text>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: '#2196F3', padding: 8, marginTop: 5 }]}
+                onPress={() => handleMarkPaymentReceived(item.id)}
+              >
+                <Text style={styles.actionButtonText}>✓ {t('markPaymentReceived') || 'Mark Payment Received'}</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       )}
@@ -217,6 +257,18 @@ export default function FarmerContractsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {activeTab === 'completed' && (
+        <View style={[styles.searchContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <TextInput
+            style={[styles.searchInput, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
+            placeholder={t('searchCompletedContracts') || 'Search by crop, buyer, or ID...'}
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      )}
+
       <FlatList
         data={filteredContracts}
         renderItem={renderContract}
@@ -248,6 +300,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#fff',
     paddingVertical: 10,
+  },
+  searchContainer: {
+    padding: 10,
+    borderBottomWidth: 1,
+  },
+  searchInput: {
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
   },
   tab: {
     flex: 1,

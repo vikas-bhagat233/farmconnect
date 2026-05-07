@@ -57,7 +57,14 @@ export default function MarketplaceScreen({ navigation }) {
       </View>
       <TouchableOpacity 
         style={styles.negotiateButton}
-        onPress={() => navigation.navigate('Negotiation', { cropId: item.id })}
+        onPress={() => navigation.navigate('Negotiation', { 
+          cropId: item.id,
+          cropName: item.name,
+          farmerId: item.farmerId,
+          farmerName: item.farmerName,
+          originalPrice: item.price,
+          maxQuantity: item.quantity
+        })}
       >
         <Text style={styles.negotiateButtonText}>{t('negotiate') || 'Negotiate'}</Text>
       </TouchableOpacity>

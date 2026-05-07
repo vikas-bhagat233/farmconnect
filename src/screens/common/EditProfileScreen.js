@@ -17,9 +17,10 @@ import { updateUserProfile } from '../../services/firestoreService';
 
 export default function EditProfileScreen({ navigation }) {
 
-  const { user, updateUser } = useAuth();
+  const { user, userRole, updateUser } = useAuth();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [formData, setFormData] = useState({
     name: user?.displayName || '',
     phone: '',
@@ -29,6 +30,27 @@ export default function EditProfileScreen({ navigation }) {
     bio: ''
   });
   const [profileImage, setProfileImage] = useState(user?.photoURL);
+
+  React.useEffect(() => {
+    const loadProfile = async () => {
+      if (user?.uid) {
+        const { getUserProfile } = require('../../services/firestoreService');
+        const profile = await getUserProfile(user.uid);
+        if (profile) {
+          setFormData(prev => ({
+            ...prev,
+            phone: profile.phone || '',
+            location: profile.location || '',
+            farmName: profile.farmName || '',
+            farmSize: profile.farmSize || '',
+            bio: profile.bio || ''
+          }));
+        }
+      }
+      setFetching(false);
+    };
+    loadProfile();
+  }, [user?.uid]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -71,6 +93,14 @@ export default function EditProfileScreen({ navigation }) {
     
     setLoading(false);
   };
+
+  if (fetching) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -125,7 +155,7 @@ export default function EditProfileScreen({ navigation }) {
           numberOfLines={4}
         />
 
-        {user?.role === 'farmer' && (
+        {userRole === 'farmer' && (
           <>
             <Text style={styles.label}>{t('farmName') || 'Farm Name'}</Text>
             <TextInput

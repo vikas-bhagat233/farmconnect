@@ -26,7 +26,7 @@ const screenWidth = Dimensions.get('window').width;
 
 export default function BuyerDashboardScreen({ navigation }) {
   const { user } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const { unreadCount } = useNotification();
   const [featuredCrops, setFeaturedCrops] = useState([]);
@@ -54,7 +54,7 @@ export default function BuyerDashboardScreen({ navigation }) {
   const loadData = async () => {
     if (!user?.uid) return;
     const crops = await getMarketplaceCrops();
-    setFeaturedCrops(crops.slice(0, 5));
+    setFeaturedCrops(crops);
     setFilteredCrops(crops.slice(0, 5));
   };
 
@@ -67,7 +67,7 @@ export default function BuyerDashboardScreen({ navigation }) {
   const handleSearch = (text) => {
     setSearchQuery(text);
     if (!text.trim()) {
-      setFilteredCrops(featuredCrops);
+      setFilteredCrops(featuredCrops.slice(0, 5));
       return;
     }
     const filtered = featuredCrops.filter(crop => 
@@ -118,7 +118,7 @@ export default function BuyerDashboardScreen({ navigation }) {
             </View>
 
             <View style={styles.searchBarWrapper}>
-              <View style={styles.searchBarInner}>
+              <View style={[styles.searchBarInner, { backgroundColor: isDark ? '#333' : '#fff' }]}>
                 <Text style={styles.searchIcon}>🔍</Text>
                 <TextInput
                   style={[styles.searchInput, { color: colors.text }]}

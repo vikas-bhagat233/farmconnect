@@ -9,12 +9,53 @@ import {
   orderBy, 
   updateDoc,
   deleteDoc,
-  Timestamp
+  Timestamp,
+  getDoc
 } from './firebase';
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+export const registerForPushNotificationsAsync = async (userId) => {
+  let token;
+  try {
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') return null;
+
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      if (projectId) {
+        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      } else {
+        token = (await Notifications.getExpoPushTokenAsync()).data;
+      }
+
+      if (token && userId) {
+        await updateDoc(doc(db, 'users', userId), { pushToken: token });
+      }
+    }
+  } catch (error) {
+    console.log('Push notifications not fully configured (EAS project ID missing). Continuing without push.');
+  }
+  return token;
+};
 
 export const sendNotification = async (userId, title, body, data = {}) => {
   try {
+    if (!userId) return { success: false, error: 'Missing userId' };
     // Save notification to Firestore — the recipient reads it from their device
     const notificationRef = doc(collection(db, 'notifications'));
     await setDoc(notificationRef, {
@@ -27,13 +68,31 @@ export const sendNotification = async (userId, title, body, data = {}) => {
       type: data.type || 'general'
     });
 
-    // Only schedule a local push notification if this notification is FOR the
-    // currently logged-in user on this device. We cannot send push to other
-    // devices from the client — that requires a backend with FCM tokens.
-    // Scheduling for a different userId here would show the notification on
-    // the wrong device (the sender's phone), which is the bug being fixed.
-    // The recipient will see their notifications when they open the app via
-    // the Notifications screen which reads from Firestore by userId.
+    // 2. Send Expo Push Notification if user has a token
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      const pushToken = userDoc.exists() ? userDoc.data().pushToken : null;
+      
+      if (pushToken) {
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Accept-encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: pushToken,
+            sound: 'default',
+            title: title,
+            body: body,
+            data: data,
+          }),
+        });
+      }
+    } catch (pushErr) {
+      console.log('Failed to send push notification API:', pushErr);
+    }
 
     return { success: true };
   } catch (error) {

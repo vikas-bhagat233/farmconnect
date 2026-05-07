@@ -9,7 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Modal
 } from 'react-native';
 import { createNegotiation, sendNegotiationMessage, getNegotiation, getNegotiationById } from '../../services/firestoreService';
 import { createContract } from '../../services/contractService';
@@ -42,6 +43,8 @@ export default function NegotiationScreen({ navigation, route }) {
   const [sending, setSending] = useState(false);
   const [counterPrice, setCounterPrice] = useState('');
   const [counterQuantity, setCounterQuantity] = useState('');
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [deliveryLocation, setDeliveryLocation] = useState('');
   const scrollRef = useRef(null);
   const unsubscribeRef = useRef(null);
 
@@ -53,45 +56,60 @@ export default function NegotiationScreen({ navigation, route }) {
   }, []);
 
   const initializeNegotiation = async () => {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const bId = userRole === 'buyer' ? user.uid : routeBuyerId;
-    const fId = userRole === 'farmer' ? user.uid : farmerId;
+      let negotiationData = null;
+      if (routeNegotiationId) {
+        negotiationData = await getNegotiationById(routeNegotiationId);
+      }
 
-    let negotiationData = null;
-    if (routeNegotiationId) {
-      negotiationData = await getNegotiationById(routeNegotiationId);
-    } else {
-      negotiationData = await getNegotiation(cropId, bId, fId);
-    }
+      const bId = routeBuyerId || (userRole === 'buyer' ? user.uid : negotiationData?.buyerId);
+      const fId = farmerId || (userRole === 'farmer' ? user.uid : negotiationData?.farmerId);
 
-    if (!negotiationData && userRole === 'buyer') {
-      negotiationData = await createNegotiation({
-        cropId,
-        cropName,
-        buyerId: user.uid,
-        buyerName: user.displayName,
-        farmerId,
-        farmerName,
-        originalPrice,
-        proposedPrice,
-        proposedQuantity,
-        maxQuantity,
-        status: 'active'
-      });
-    }
+      if (!bId || (!fId && !routeNegotiationId)) {
+        throw new Error('Missing buyer or farmer ID to start negotiation.');
+      }
 
-    if (negotiationData) {
-      setNegotiation(negotiationData);
-      setMessages(negotiationData.messages || []);
-      // Subscribe to real-time updates
-      subscribeToNegotiation(negotiationData.id);
-    } else if (userRole === 'farmer') {
-      Alert.alert(t('error') || 'Error', t('negotiationNotFound') || 'Negotiation not found');
+      if (!negotiationData && !routeNegotiationId) {
+        negotiationData = await getNegotiation(cropId, bId, fId);
+      }
+
+      if (!negotiationData && (userRole === 'buyer' || !routeNegotiationId)) {
+        negotiationData = await createNegotiation({
+          cropId: cropId || 'unknown',
+          cropName: cropName || 'Unknown Crop',
+          buyerId: bId,
+          buyerName: user.displayName || 'Buyer',
+          farmerId: fId,
+          farmerName: farmerName || 'Farmer',
+          originalPrice: originalPrice || 0,
+          proposedPrice: proposedPrice || 0,
+          proposedQuantity: proposedQuantity || 0,
+          maxQuantity: maxQuantity || 0,
+          status: 'active'
+        });
+      }
+
+      if (negotiationData) {
+        setNegotiation(negotiationData);
+        setMessages(negotiationData.messages || []);
+        if (userRole === 'buyer' && !negotiationData.deliveryLocation) {
+          setShowLocationModal(true);
+        }
+        // Subscribe to real-time updates
+        subscribeToNegotiation(negotiationData.id);
+      } else {
+        Alert.alert(t('error') || 'Error', t('negotiationNotFound') || 'Negotiation not found');
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error('initializeNegotiation error:', error);
+      Alert.alert(t('error') || 'Error', error.message);
       navigation.goBack();
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const subscribeToNegotiation = (negId) => {
@@ -107,6 +125,22 @@ export default function NegotiationScreen({ navigation, route }) {
     });
   };
 
+  const saveDeliveryLocation = async () => {
+    if (!deliveryLocation.trim()) return;
+    setSending(true);
+    try {
+      const { doc, updateDoc, db } = require('../../services/firebase');
+      await updateDoc(doc(db, 'negotiations', negotiation.id), {
+        deliveryLocation: deliveryLocation.trim()
+      });
+      setNegotiation(prev => ({ ...prev, deliveryLocation: deliveryLocation.trim() }));
+      setShowLocationModal(false);
+    } catch (error) {
+      Alert.alert(t('error') || 'Error', error.message);
+    }
+    setSending(false);
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !negotiation) return;
     setSending(true);
@@ -119,8 +153,10 @@ export default function NegotiationScreen({ navigation, route }) {
     };
     await sendNegotiationMessage(negotiation.id, messageData);
     setNewMessage('');
-    const recipientId = userRole === 'buyer' ? farmerId : negotiation.buyerId;
-    await sendNotification(recipientId, t('newMessage') || 'New Message 💬', `${user.displayName}: ${newMessage}`, { type: 'message' });
+    let recipientId = userRole === 'buyer' ? (farmerId || negotiation.farmerId) : (routeBuyerId || negotiation.buyerId);
+    if (recipientId !== user.uid) {
+      await sendNotification(recipientId, t('newMessage') || 'New Message 💬', `${user.displayName}: ${newMessage}`, { type: 'message' });
+    }
     setSending(false);
   };
 
@@ -151,13 +187,15 @@ export default function NegotiationScreen({ navigation, route }) {
     setCounterPrice('');
     setCounterQuantity('');
     setSending(false);
-    const recipientId = userRole === 'buyer' ? farmerId : negotiation.buyerId;
-    await sendNotification(
-      recipientId,
-      t('newCounterOffer') || 'New Counter Offer 🤝',
-      `${user.displayName} ${t('offered') || 'offered'} ₹${counterPrice}/kg ${t('for') || 'for'} ${counterQuantity}kg`,
-      { type: 'negotiation' }
-    );
+    let recipientId = userRole === 'buyer' ? (farmerId || negotiation.farmerId) : (routeBuyerId || negotiation.buyerId);
+    if (recipientId !== user.uid) {
+      await sendNotification(
+        recipientId,
+        t('newCounterOffer') || 'New Counter Offer 🤝',
+        `${user.displayName} ${t('offered') || 'offered'} ₹${counterPrice}/kg ${t('for') || 'for'} ${counterQuantity}kg`,
+        { type: 'negotiation' }
+      );
+    }
   };
 
   // Buyer accepts a farmer's counter offer → goes to MakeContract
@@ -194,18 +232,19 @@ export default function NegotiationScreen({ navigation, route }) {
             setSending(true);
             try {
               const contractData = {
-                cropId,
-                cropName,
+                cropId: cropId || 'unknown',
+                cropName: cropName || 'Unknown Crop',
                 farmerId: user.uid,
-                farmerName: user.displayName,
+                farmerName: user.displayName || 'Farmer',
                 buyerId: negotiation.buyerId,
-                buyerName: negotiation.buyerName,
+                buyerName: negotiation.buyerName || 'Buyer',
                 agreedPrice: offerPrice,
                 quantity: offerQuantity,
                 totalAmount: offerPrice * offerQuantity,
                 advanceAmount: Math.round(offerPrice * offerQuantity * 0.3),
                 remainingAmount: Math.round(offerPrice * offerQuantity * 0.7),
                 deliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                deliveryLocation: negotiation.deliveryLocation || 'Pending Buyer Confirmation',
                 negotiationId: negotiation.id,
                 status: 'active',  // farmer accepts → directly active
                 createdAt: new Date().toISOString()
@@ -241,11 +280,40 @@ export default function NegotiationScreen({ navigation, route }) {
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <Modal visible={showLocationModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('enterDeliveryLocation') || 'Enter Delivery Location'}</Text>
+            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
+              {t('enterDeliveryLocationDesc') || 'Please enter where you want this crop delivered. This will be used if the farmer accepts your offer.'}
+            </Text>
+            <TextInput
+              style={[styles.modalInput, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
+              placeholder={t('enterDeliveryLocationPlaceholder') || 'e.g., 123 Farm Road, City'}
+              placeholderTextColor={colors.textSecondary}
+              value={deliveryLocation}
+              onChangeText={setDeliveryLocation}
+            />
+            <TouchableOpacity 
+              style={[styles.modalButton, { backgroundColor: colors.primary }]}
+              onPress={saveDeliveryLocation}
+              disabled={sending || !deliveryLocation.trim()}
+            >
+              <Text style={styles.modalButtonText}>{sending ? (t('saving') || 'Saving...') : (t('saveLocation') || 'Save Location')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.cropName, { color: colors.text }]}>{cropName}</Text>
+        <Text style={[styles.cropName, { color: colors.text }]}>
+          {negotiation?.cropName && negotiation.cropName !== 'Unknown Crop' ? negotiation.cropName : (cropName || 'Unknown Crop')}
+        </Text>
         <Text style={[styles.subTitle, { color: colors.textSecondary }]}>
-          {userRole === 'farmer' ? `${t('buyer') || 'Buyer'}: ${negotiation?.buyerName || ''}` : `${t('farmer') || 'Farmer'}: ${farmerName}`}
+          {userRole === 'farmer' 
+            ? `${t('buyer') || 'Buyer'}: ${negotiation?.buyerName && negotiation.buyerName !== 'Buyer' ? negotiation.buyerName : (negotiation?.buyerName || 'Buyer')}` 
+            : `${t('farmer') || 'Farmer'}: ${negotiation?.farmerName && negotiation.farmerName !== 'Farmer' ? negotiation.farmerName : (farmerName || 'Farmer')}`}
         </Text>
         {isLocked && (
           <View style={styles.lockedBanner}>
@@ -359,26 +427,24 @@ export default function NegotiationScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* Message Input — hidden when locked */}
-      {!isLocked && (
-        <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
-          <TextInput
-            style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
-            placeholder={t('typeMessage') || 'Type a message...'}
-            placeholderTextColor={colors.textSecondary}
-            value={newMessage}
-            onChangeText={setNewMessage}
-            multiline
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, { backgroundColor: sending ? colors.border : colors.primary }]}
-            onPress={sendMessage}
-            disabled={sending}
-          >
-            <Text style={styles.sendButtonText}>{t('send') || 'Send'}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Message Input — always visible so they can chat */}
+      <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+        <TextInput
+          style={[styles.input, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
+          placeholder={t('typeMessage') || 'Type a message...'}
+          placeholderTextColor={colors.textSecondary}
+          value={newMessage}
+          onChangeText={setNewMessage}
+          multiline
+        />
+        <TouchableOpacity
+          style={[styles.sendButton, { backgroundColor: sending ? colors.border : colors.primary }]}
+          onPress={sendMessage}
+          disabled={sending}
+        >
+          <Text style={styles.sendButtonText}>{t('send') || 'Send'}</Text>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -422,4 +488,11 @@ const styles = StyleSheet.create({
   input: { flex: 1, borderRadius: 20, padding: 10, paddingHorizontal: 15, marginRight: 10, maxHeight: 100 },
   sendButton: { justifyContent: 'center', paddingHorizontal: 18, borderRadius: 20 },
   sendButtonText: { color: '#fff', fontWeight: 'bold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalContent: { padding: 20, borderRadius: 15, elevation: 5 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
+  modalDesc: { fontSize: 14, marginBottom: 15, lineHeight: 20 },
+  modalInput: { borderRadius: 10, padding: 15, fontSize: 16, marginBottom: 15 },
+  modalButton: { padding: 15, borderRadius: 10, alignItems: 'center' },
+  modalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

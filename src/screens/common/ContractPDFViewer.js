@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { generateContractPDF, getContractById } from '../../services/firestoreService';
+import * as ScreenCapture from 'expo-screen-capture';
 
 export default function ContractPDFViewer({ navigation, route }) {
   const { contractId } = route.params;
@@ -19,6 +20,10 @@ export default function ContractPDFViewer({ navigation, route }) {
 
   useEffect(() => {
     loadPDF();
+    ScreenCapture.preventScreenCaptureAsync();
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync();
+    };
   }, []);
 
   const loadPDF = async () => {

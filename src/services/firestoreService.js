@@ -61,10 +61,15 @@ export const getFarmerStats = async (farmerId) => {
   
   contractsSnapshot.forEach(doc => {
     const contract = doc.data();
-    if (contract.status === 'active' || contract.status === 'pending') activeContracts++;
+    if (contract.status === 'active' || contract.status === 'pending' || contract.status === 'accept') {
+      activeContracts++;
+      if (contract.advancePaid) {
+        totalEarnings += contract.advanceAmount || (contract.totalAmount * 0.3) || 0;
+      }
+    }
     if (contract.status === 'completed') {
       completedContracts++;
-      totalEarnings += contract.totalAmount;
+      totalEarnings += contract.totalAmount || 0;
     }
   });
   
@@ -86,10 +91,15 @@ export const getBuyerStats = async (buyerId) => {
   
   contractsSnapshot.forEach(doc => {
     const contract = doc.data();
-    if (contract.status === 'active' || contract.status === 'pending') activeContracts++;
+    if (contract.status === 'active' || contract.status === 'pending' || contract.status === 'accept') {
+      activeContracts++;
+      if (contract.advancePaid) {
+        totalSpent += contract.advanceAmount || (contract.totalAmount * 0.3) || 0;
+      }
+    }
     if (contract.status === 'completed') {
       completedContracts++;
-      totalSpent += contract.totalAmount;
+      totalSpent += contract.totalAmount || 0;
     }
   });
   
@@ -110,6 +120,10 @@ export const subscribeToBuyerStats = (buyerId, callback) => {
       const contract = { id: doc.id, ...doc.data() };
       if (contract.status === 'active' || contract.status === 'pending' || contract.status === 'accept') {
         activeContracts++;
+        if (contract.advancePaid) {
+          totalSpent += contract.advanceAmount || (contract.totalAmount * 0.3) || 0;
+        }
+        
         if ((contract.status === 'active' || contract.status === 'accept') && !contract.advancePaid) {
           pendingPayments.push(contract);
         }
@@ -137,10 +151,15 @@ export const subscribeToFarmerStats = (farmerId, callback) => {
     
     snapshot.forEach(doc => {
       const contract = { id: doc.id, ...doc.data() };
-      if (contract.status === 'active' || contract.status === 'pending' || contract.status === 'accept') activeContracts++;
+      if (contract.status === 'active' || contract.status === 'pending' || contract.status === 'accept') {
+        activeContracts++;
+        if (contract.advancePaid) {
+          totalEarnings += contract.advanceAmount || (contract.totalAmount * 0.3) || 0;
+        }
+      }
       if (contract.status === 'completed') {
         completedContracts++;
-        totalEarnings += contract.totalAmount;
+        totalEarnings += contract.totalAmount || 0;
       }
     });
     

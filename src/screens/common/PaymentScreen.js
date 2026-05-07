@@ -29,7 +29,7 @@ export default function PaymentScreen({ navigation, route }) {
 
   const loadPaymentDetails = async () => {
     try {
-      const data = await getPaymentDetails(contractId, type);
+      const data = await getPaymentDetails(contractId, type, user.uid);
       setPayment(data);
     } catch (error) {
       console.error('loadPaymentDetails error:', error);

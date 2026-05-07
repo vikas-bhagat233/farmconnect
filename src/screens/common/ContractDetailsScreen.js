@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Share
+  Share,
+  TextInput
 } from 'react-native';
 import { getContractById, updateContractStatus, downloadContractPDF, markDeliveryCompleted, ensureRemainingPaymentRecord } from '../../services/contractService';
 import { getFarmerById } from '../../services/firestoreService';
@@ -23,6 +24,8 @@ export default function ContractDetailsScreen({ navigation, route }) {
   const [contract, setContract] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [newLocation, setNewLocation] = useState('');
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
 
   const formatDateSafe = (value) => {
     if (!value) return null;
@@ -115,6 +118,24 @@ export default function ContractDetailsScreen({ navigation, route }) {
     );
   };
 
+  const handleSaveLocation = async () => {
+    if (!newLocation.trim()) return;
+    setUpdating(true);
+    try {
+      const { updateDoc, doc, db } = require('../../services/firebase');
+      await updateDoc(doc(db, 'contracts', contractId), {
+        deliveryLocation: newLocation.trim(),
+        updatedAt: new Date().toISOString()
+      });
+      await loadContract();
+      setIsAddingLocation(false);
+      Alert.alert(t('success') || 'Success', t('locationUpdated') || 'Delivery location updated successfully!');
+    } catch (error) {
+      Alert.alert(t('error') || 'Error', error.message);
+    }
+    setUpdating(false);
+  };
+
   const getStatusColor = () => {
     switch(contract?.status) {
       case 'pending': return '#FFC107';
@@ -188,9 +209,34 @@ export default function ContractDetailsScreen({ navigation, route }) {
           <Text style={[styles.label, { color: colors.textSecondary }]}>{t('deliveryDate') || 'Delivery Date'}:</Text>
           <Text style={[styles.value, { color: colors.text }]}>{formatDateSafe(contract?.deliveryDate) || (t('notSet') || 'Not set')}</Text>
         </View>
-        <View style={styles.detailRow}>
+        <View style={[styles.detailRow, { alignItems: 'center' }]}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>{t('location') || 'Location'}:</Text>
-          <Text style={[styles.value, { color: colors.text }]}>{contract?.deliveryLocation || (t('toBeConfirmed') || 'To be confirmed')}</Text>
+          {contract?.deliveryLocation ? (
+            <Text style={[styles.value, { color: colors.text }]}>{contract.deliveryLocation}</Text>
+          ) : userRole === 'buyer' ? (
+            <View style={{ flex: 1 }}>
+              {isAddingLocation ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput
+                    style={[styles.locationInput, { backgroundColor: isDark ? colors.background : '#f0f0f0', color: colors.text }]}
+                    placeholder={t('enterDeliveryLocationPlaceholder') || 'Enter delivery location'}
+                    placeholderTextColor={colors.textSecondary}
+                    value={newLocation}
+                    onChangeText={setNewLocation}
+                  />
+                  <TouchableOpacity style={styles.saveLocationBtn} onPress={handleSaveLocation} disabled={updating}>
+                    <Text style={styles.saveLocationBtnText}>{t('save') || 'Save'}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity onPress={() => setIsAddingLocation(true)}>
+                  <Text style={{ color: colors.primary, fontWeight: 'bold' }}>+ {t('addLocation') || 'Add Location'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <Text style={[styles.value, { color: colors.textSecondary, fontStyle: 'italic' }]}>{t('toBeConfirmed') || 'Waiting for Buyer to Add Location'}</Text>
+          )}
         </View>
         <View style={styles.detailRow}>
           <Text style={[styles.label, { color: colors.textSecondary }]}>{t('deliveryStatus') || 'Delivery Status'}:</Text>
@@ -391,5 +437,23 @@ const styles = StyleSheet.create({
   downloadButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  locationInput: {
+    flex: 1,
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 14,
+    marginRight: 8,
+  },
+  saveLocationBtn: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  saveLocationBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });

@@ -55,6 +55,7 @@ export const generateContractPDF = async (contract) => {
           <div class="row"><span class="label">Advance Payment:</span><span class="value">₹${contract.advanceAmount}</span></div>
           <div class="row"><span class="label">Balance Payment:</span><span class="value">₹${contract.remainingAmount}</span></div>
           <div class="row"><span class="label">Expected Delivery Date:</span><span class="value">${new Date(contract.deliveryDate).toLocaleDateString()}</span></div>
+          <div class="row"><span class="label">Delivery Location:</span><span class="value">${contract.deliveryLocation || 'Yet to be confirmed'}</span></div>
         </div>
 
         <div class="section">

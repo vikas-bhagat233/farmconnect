@@ -107,6 +107,42 @@ export const createContract = async (contractData) => {
       );
     } catch (e) {}
     
+    // If contract is created as directly active, create the pending payment record
+    if (contractData.status === 'active') {
+      try {
+        const paymentRef = doc(collection(db, 'payments'));
+        await setDoc(paymentRef, {
+          id: paymentRef.id,
+          contractId: contractId,
+          buyerId: contractData.buyerId,
+          buyerName: contractData.buyerName,
+          farmerId: contractData.farmerId,
+          farmerName: contractData.farmerName,
+          cropName: contractData.cropName,
+          amount: advanceAmount,
+          type: 'advance',
+          status: 'pending',
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          createdAt: new Date().toISOString()
+        });
+      } catch (e) {}
+
+      // Deduct crop quantity for instantly active contracts
+      try {
+        const cropRef = doc(db, 'crops', contractData.cropId);
+        const cropSnap = await getDoc(cropRef);
+        if (cropSnap.exists()) {
+          const cropDataSnapshot = cropSnap.data();
+          const newQuantity = (cropDataSnapshot.quantity || 0) - contractData.quantity;
+          await updateDoc(cropRef, { 
+            quantity: Math.max(0, newQuantity),
+            status: newQuantity <= 0 ? 'sold' : 'available',
+            contractId: contractId
+          });
+        }
+      } catch (e) {}
+    }
+
     return { success: true, contractId: contractRef.id };
   } catch (error) {
     return { success: false, error: `General error: ${error.message}` };
@@ -271,11 +307,25 @@ export const downloadContractPDF = async (contract) => {
 export const markDeliveryCompleted = async (contractId) => {
   try {
     const contractRef = doc(db, 'contracts', contractId);
+    const contractSnap = await getDoc(contractRef);
+    if (!contractSnap.exists()) return { success: false, error: 'Not found' };
+    const contract = contractSnap.data();
+
     await updateDoc(contractRef, {
       deliveryCompleted: true,
       deliveryCompletedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
+    
+    try {
+      await sendNotification(
+        contract.buyerId,
+        'Delivery Completed 📦',
+        `${contract.farmerName} has marked the delivery for ${contract.cropName} as completed. Please finalize any remaining payments.`,
+        { type: 'contract', contractId }
+      );
+    } catch (e) {}
+    
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
@@ -314,6 +364,54 @@ export const ensureRemainingPaymentRecord = async (contractId) => {
     });
 
     return { success: true, created: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const completeContractPayment = async (contractId) => {
+  try {
+    const contractRef = doc(db, 'contracts', contractId);
+    const contractSnap = await getDoc(contractRef);
+    if (!contractSnap.exists()) return { success: false, error: 'Not found' };
+    const contract = contractSnap.data();
+
+    await updateDoc(contractRef, {
+      fullPaid: true,
+      status: 'completed',
+      deliveryCompleted: true,
+      updatedAt: new Date().toISOString()
+    });
+
+    try {
+      await sendNotification(
+        contract.buyerId,
+        'Payment Confirmed ✅',
+        `${contract.farmerName} has received your final payment. The contract for ${contract.cropName} is now completed!`,
+        { type: 'contract', contractId }
+      );
+    } catch (e) {}
+
+    try {
+      // Create a 'received' payment record for the remaining 70%
+      const paymentRef = doc(collection(db, 'payments'));
+      await setDoc(paymentRef, {
+        id: paymentRef.id,
+        contractId: contract.id,
+        buyerId: contract.buyerId,
+        buyerName: contract.buyerName,
+        farmerId: contract.farmerId,
+        farmerName: contract.farmerName,
+        cropName: contract.cropName,
+        amount: contract.remainingAmount,
+        type: 'remaining',
+        status: 'received',
+        paidAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {}
+
+    return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
   }

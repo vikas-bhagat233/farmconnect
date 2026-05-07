@@ -19,6 +19,7 @@ import { getWeatherData } from '../../services/weatherService';
 import ChatbotModal from '../../components/chatbot/ChatbotModal';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
+import * as Location from 'expo-location';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -55,8 +56,57 @@ export default function FarmerDashboardScreen({ navigation }) {
     const crops = await getRecentCrops(user.uid);
     setRecentCrops(crops);
     setFilteredCrops(crops);
-    const weatherData = await getWeatherData(28.6139, 77.2090);
-    setWeather(weatherData);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        const weatherData = await getWeatherData(28.6139, 77.2090); // default to Delhi
+        setWeather(weatherData);
+      } else {
+        let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        
+        let actualLocationName = t('yourLocation') || 'Your Location';
+        try {
+          const geocode = await Location.reverseGeocodeAsync({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+          });
+          if (geocode && geocode.length > 0) {
+            const place = geocode[0];
+            // Try to use city, fallback to district/subregion, then state/region
+            actualLocationName = place.city || place.subregion || place.region || actualLocationName;
+          }
+        } catch (geoErr) {
+          console.log('Geocoding error:', geoErr);
+        }
+
+        const weatherData = await getWeatherData(location.coords.latitude, location.coords.longitude);
+        setWeather({ ...weatherData, locationName: actualLocationName });
+      }
+    } catch (error) {
+      console.log('Location error:', error);
+      const weatherData = await getWeatherData(28.6139, 77.2090);
+      setWeather(weatherData);
+    }
+
+    const farmerStats = await getFarmerStats(user.uid);
+    setStats(prev => ({ ...prev, totalCrops: farmerStats.totalCrops }));
+  };
+
+  const getPastMonths = () => {
+    const months = [
+      t('monthJanShort') || 'Jan', t('monthFebShort') || 'Feb', t('monthMarShort') || 'Mar',
+      t('monthAprShort') || 'Apr', t('monthMayShort') || 'May', t('monthJunShort') || 'Jun',
+      t('monthJulShort') || 'Jul', t('monthAugShort') || 'Aug', t('monthSepShort') || 'Sep',
+      t('monthOctShort') || 'Oct', t('monthNovShort') || 'Nov', t('monthDecShort') || 'Dec'
+    ];
+    const currentMonth = new Date().getMonth();
+    const pastMonths = [];
+    for (let i = 4; i >= 0; i--) { // Reduce to 5 months to avoid overcrowding
+      let m = currentMonth - i;
+      if (m < 0) m += 12;
+      pastMonths.push(months[m]);
+    }
+    return pastMonths;
   };
 
   const onRefresh = async () => {
@@ -129,6 +179,7 @@ export default function FarmerDashboardScreen({ navigation }) {
       {/* Weather Card */}
       {weather && (
         <View style={[styles.weatherCard, { backgroundColor: colors.primary }]}>
+          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 5 }}>📍 {weather.locationName || 'Delhi (Default)'}</Text>
           <View style={styles.weatherInfo}>
             <View>
               <Text style={styles.weatherTemp}>{weather.temp}°C</Text>
@@ -164,27 +215,19 @@ export default function FarmerDashboardScreen({ navigation }) {
         <Text style={[styles.sectionTitle, { color: colors.text, marginLeft: 0 }]}>{t('earningsOverview')}</Text>
         <LineChart
           data={{
-            labels: [
-              t('monthJanShort') || 'Jan',
-              t('monthFebShort') || 'Feb',
-              t('monthMarShort') || 'Mar',
-              t('monthAprShort') || 'Apr',
-              t('monthMayShort') || 'May',
-              t('monthJunShort') || 'Jun'
-            ],
+            labels: getPastMonths(),
             datasets: [{
               data: [
-                Math.random() * 5000,
-                Math.random() * 5000,
-                Math.random() * 10000,
-                Math.random() * 8000,
-                stats.totalEarnings * 0.4,
+                Math.round(stats.totalEarnings * 0.2),
+                Math.round(stats.totalEarnings * 0.35),
+                Math.round(stats.totalEarnings * 0.5),
+                Math.round(stats.totalEarnings * 0.75),
                 stats.totalEarnings
               ]
             }]
           }}
-          width={screenWidth - 60}
-          height={180}
+          width={screenWidth - 40}
+          height={200}
           chartConfig={{
             backgroundColor: colors.card,
             backgroundGradientFrom: colors.card,
@@ -193,10 +236,13 @@ export default function FarmerDashboardScreen({ navigation }) {
             color: (opacity = 1) => colors.primary,
             labelColor: (opacity = 1) => colors.textSecondary,
             style: { borderRadius: 16 },
-            propsForDots: { r: "6", strokeWidth: "2", stroke: colors.primary }
+            propsForDots: { r: "4", strokeWidth: "2", stroke: colors.primary },
+            propsForLabels: { fontSize: 10 } // Smaller font for labels
           }}
           bezier
-          style={{ marginVertical: 8, borderRadius: 16 }}
+          style={{ marginVertical: 8, borderRadius: 16, paddingRight: 40 }}
+          yAxisLabel="₹"
+          xLabelsOffset={-5}
         />
       </View>
 

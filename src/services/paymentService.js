@@ -74,7 +74,7 @@ export const processPayment = async (paymentData) => {
   }
 };
 
-export const getPaymentDetails = async (contractId, type) => {
+export const getPaymentDetails = async (contractId, type, userId) => {
   // Always fetch the contract first so we have full data
   const contractSnap = await getDoc(doc(db, 'contracts', contractId));
   if (!contractSnap.exists()) {
@@ -83,10 +83,12 @@ export const getPaymentDetails = async (contractId, type) => {
   const contractData = contractSnap.data();
 
   // Check if a payment record already exists
+  const isBuyer = contractData.buyerId === userId;
   const paymentsQuery = query(
     collection(db, 'payments'),
     where('contractId', '==', contractId),
-    where('type', '==', type)
+    where('type', '==', type),
+    where(isBuyer ? 'buyerId' : 'farmerId', '==', userId)
   );
   const snapshot = await getDocs(paymentsQuery);
   if (!snapshot.empty) {

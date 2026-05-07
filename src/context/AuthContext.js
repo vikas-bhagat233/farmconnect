@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { auth, onAuthStateChanged } from '../services/firebase';
 import { getUserRole } from '../services/firestoreService';
 import { loginWithEmail, signupWithEmail, loginWithGoogle, logout, saveUserRole as persistUserRole } from '../services/authService';
+import { registerForPushNotificationsAsync } from '../services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AuthContext = createContext();
@@ -20,6 +21,8 @@ export const AuthProvider = ({ children }) => {
         setUser(firebaseUser);
         setUserRole(role);
         await AsyncStorage.setItem('userRole', role || '');
+        // Register for push notifications once logged in
+        await registerForPushNotificationsAsync(firebaseUser.uid);
       } else {
         setUser(null);
         setUserRole(null);
